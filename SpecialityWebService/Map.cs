@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static SpecialityWebService.MathObjects;
 
 namespace SpecialityWebService
 {
-    public class MapGenerator
+    public class Map
     {
-        public int test { get; set; }
+
+
     }
 }

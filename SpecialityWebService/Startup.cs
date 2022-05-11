@@ -31,7 +31,6 @@ namespace SpecialityWebService
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "SpecialityWebService", Version = "v1" });
-                c.SwaggerDoc("v2", new OpenApiInfo { Title = "SpecialityWebService2", Version = "v2" });
             });
         }
 
@@ -43,7 +42,6 @@ namespace SpecialityWebService
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SpecialityWebService v1"));
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v2/swagger.json", "SpecialityWebService v2"));
             }
 
             app.UseHttpsRedirection();

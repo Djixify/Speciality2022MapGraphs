@@ -60,13 +60,12 @@ namespace SpecialityWebService
             return System.Drawing.RectangleF.FromLTRB((float)rect.Left, (float)rect.Bottom, (float)rect.Right, (float)rect.Top);
         }
 
-        /*
         public void TransformSpaceToWorld(System.Drawing.Graphics g)
         {
             g.ScaleTransform((float)Zoom, (float)Zoom);
             g.TranslateTransform((float)(WorldViewPort.Width / 2.0 - Center.X), (float)(WorldViewPort.Height / 2.0 + Center.Y));
             g.ScaleTransform(1, -1);
-        }*/
+        }
 
         /*
         public void HandleMouseDown(object sender, MouseEventArgs e)

@@ -16,6 +16,8 @@ namespace SpecialityWebService
         //{5}: Resolution width; Pixels
         //{6}: Resolution height; Pixels
 
+        public string Unavailable = "Dataforsyning: Down";
+
         //https://api.dataforsyningen.dk/topo_skaermkort_DAF?ignoreillegallayers=TRUE&transparent=TRUE&token=024b9d34348dd56d170f634e067274c6&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&BBOX=588352.5683496139245,6136975.095706283115,588872.8597855410771,6138732.095496748574&CRS=EPSG:25832&WIDTH=512&HEIGHT=1730&LAYERS=dtk_skaermkort_daempet&STYLES=&FORMAT=image/jpeg&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96
         public string Url { get; set; } = @"https://api.dataforsyningen.dk/topo_skaermkort_DAF?ignoreillegallayers=TRUE&transparent=TRUE&token={0}&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&BBOX={1},{2},{3},{4}&CRS=EPSG:25832&WIDTH={5}&HEIGHT={6}&LAYERS=dtk_skaermkort_daempet&STYLES=&FORMAT=image/jpeg&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96";
         public string Token { get; set; } = null;
@@ -37,7 +39,7 @@ namespace SpecialityWebService
 
         public void SetBoundaryBox(double minx, double miny, double maxx, double maxy)
         {
-            BBox = Rectangle.FromLBRT(minx, miny, maxx, maxy);
+            BBox = Rectangle.FromLTRB(minx, maxy, maxx, miny);
         }
 
         public void SetBoundaryBox(Rectangle rect)
@@ -50,16 +52,24 @@ namespace SpecialityWebService
         {
             List<byte> image = new List<byte>();
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(GenerateUrl());
-            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-            using (BinaryReader reader = new BinaryReader(response.GetResponseStream()))
+            try
             {
-                byte[] bytes = null;
-                do
+                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                using (BinaryReader reader = new BinaryReader(response.GetResponseStream()))
                 {
-                    bytes = reader.ReadBytes(10 * 1024 * 1024); //10 MB
-                    image.AddRange(bytes);
-                } while (bytes.Length > 0);
+                    byte[] bytes = null;
+                    do
+                    {
+                        bytes = reader.ReadBytes(10 * 1024 * 1024); //10 MB
+                        image.AddRange(bytes);
+                    } while (bytes.Length > 0);
+                }
+            } 
+            catch (WebException wex)
+            {
+                return null;
             }
+
             return image.ToArray();
         }
     }

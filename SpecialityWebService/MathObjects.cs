@@ -1,4 +1,6 @@
-﻿namespace SpecialityWebService
+﻿using System.Globalization;
+
+namespace SpecialityWebService
 {
     public class MathObjects
     {
@@ -6,6 +8,11 @@
         {
             public double X, Y;
             public Point(double x, double y) { X = x; Y = y; }
+
+            public override string ToString()
+            {
+                return $"({X.ToString(CultureInfo.InvariantCulture)},{Y.ToString(CultureInfo.InvariantCulture)})";
+            }
         }
 
         public struct Rectangle
@@ -20,7 +27,7 @@
                 MaxY = centerY + inflateY;
             }
 
-            public static Rectangle FromLBRT(double minx, double miny, double maxx, double maxy)
+            public static Rectangle FromLTRB(double minx, double maxy, double maxx, double miny)
             {
                 var r = new Rectangle();
                 r.MinX = minx;
@@ -30,9 +37,15 @@
                 return r;
             }
 
-            public static Rectangle Zero() => Rectangle.FromLBRT(0.0, 0.0, 0.0, 0.0);
+            public static Rectangle Zero() => Rectangle.FromLTRB(0.0, 0.0, 0.0, 0.0);
+            public static Rectangle InfiniteInverse() => Rectangle.FromLTRB(double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity, double.PositiveInfinity);
 
             public Point GetCenter() => new Point(MinX + (MaxX - MinX) / 2.0, MinY + (MaxY - MinY) / 2.0);
+
+            public override string ToString()
+            {
+                return $"ll=({Left.ToString(CultureInfo.InvariantCulture)},{Bottom.ToString(CultureInfo.InvariantCulture)}),ur=({Right.ToString(CultureInfo.InvariantCulture)},{Top.ToString(CultureInfo.InvariantCulture)}),w={Width.ToString(CultureInfo.InvariantCulture)},h={Height.ToString(CultureInfo.InvariantCulture)}";
+            }
 
             public double Width => MaxX - MinX;
             public double Height => MaxY - MinY;

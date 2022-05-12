@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static SpecialityWebService.MathObjects;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -26,13 +27,33 @@ namespace SpecialityWebService.Controllers
         }
 
         // GET: /Map
-        [HttpGet("generate/token={token};{minx},{miny},{maxx},{maxy}")]
-        public FileContentResult Get(string token, double minx, double miny, double maxx, double maxy)
+        [HttpGet("generate/token={wmstoken};dataset={dataset};bbox={minx},{miny},{maxx},{maxy}")]
+        public FileContentResult Get(string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", double minx = 586835.1, double miny = 6135927.2, double maxx = 591812.3, double maxy = 6139738.0)
         {
-            Byte[] b = System.IO.File.ReadAllBytes(@".\Resources\Images\gandalf_nyhed.jpg"); 
-            MemoryStream s = new MemoryStream(b);
+            DataforsyningenBackground_WMS wms = new DataforsyningenBackground_WMS();
+            wms.SetBoundaryBox(minx, miny, maxx, maxy);
+            double width = 1280;
+            double height = width * (wms.BBox.Height / wms.BBox.Width);
+            wms.PixelWidth = (int)width;
+            wms.PixelHeight = (int)height;
 
-            return null;
+            Map.Dataset ds = Map.Dataset.VejmanHastigheder;
+            switch (dataset)
+            {
+                case "geodanmark60":
+                    ds = Map.Dataset.GeoDanmark60;
+                    break;
+                case "vejmanhastigheder":
+                    ds = Map.Dataset.VejmanHastigheder;
+                    break;
+                default:
+                    ds = Map.Dataset.VejmanHastigheder;
+                    break;
+            }
+
+            Map map = new Map(wmstoken, ds, 1280, minx, miny, maxx, maxy);
+
+            return File(map.RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg), "image/jpg");
         }
 
         [HttpGet("service={service}")]
@@ -47,21 +68,7 @@ namespace SpecialityWebService.Controllers
                 wms.PixelWidth = (int)width;
                 wms.PixelHeight = (int)height;
 
-                return File(wms.GetImageBytes(), "image/jpg");
-            }
-            else if (service == "wfs")
-            {
-                GeoDanmark60_WFS wfs = new GeoDanmark60_WFS();
-                wfs.SetBoundaryBox(588352.5683496139245, 6136975.095706283115, 588872.8597855410771, 6138732.095496748574);
-
-                string result = null;
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(wfs.GenerateUrl());
-                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-                using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-                {
-                    result = reader.ReadToEnd();
-                }
-                return File(Encoding.UTF8.GetBytes(result), "text/xml");
+                return File(wms.GetImageBytes() ?? new byte[0], "image/jpg");
             }
             else
             {

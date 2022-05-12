@@ -36,6 +36,11 @@
 
             public double Width => MaxX - MinX;
             public double Height => MaxY - MinY;
+
+            public double Left => MinX;
+            public double Top => MaxY;
+            public double Right => MaxX;
+            public double Bottom => MinY;
         }
     }
 }

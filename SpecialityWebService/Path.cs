@@ -10,12 +10,13 @@ namespace SpecialityWebService
 {
     public class Path
     {
-        private List<Point> _points;
+
+        public List<Point> Points;
         public Point this[int i] { 
-            get { return _points[i]; }
+            get { return Points[i]; }
             set 
-            { 
-                _points[i] = value;
+            {
+                Points[i] = value;
                 UpdateBoundaryBox();
             }
         }
@@ -25,7 +26,7 @@ namespace SpecialityWebService
         private void UpdateBoundaryBox()
         {
             Rectangle rect = Rectangle.InfiniteInverse();
-            foreach (Point p in _points)
+            foreach (Point p in Points)
             {
                 rect.MinX = Math.Min(p.X, rect.MinX);
                 rect.MinY = Math.Min(p.Y, rect.MinY);
@@ -122,7 +123,7 @@ namespace SpecialityWebService
             }
 
             Path p = new Path();
-            p._points = _points;
+            p.Points = _points;
             p.BoundaryBox = _boundarybox;
             p.Id = _id;
             p.Fid = _fid;

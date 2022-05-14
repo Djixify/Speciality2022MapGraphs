@@ -18,14 +18,16 @@ namespace SpecialityWebService
             get
             {
                 double halfwidth = Width / Zoom / 2.0, halfheight = Height / Zoom / 2.0;
-                return new Rectangle(Center.X - halfwidth, Center.Y - halfheight, Width / Zoom, Height / Zoom);
+                return new Rectangle(Center.X - halfwidth, Center.Y - halfheight, halfwidth, halfheight);
             }
         }
-        public Rectangle ScreenViewPort { get => new Rectangle(0, 0, Width, Height); }
+        public Rectangle ScreenViewPort { get => Rectangle.FromLTRB(0, Height, Width, 0); }
 
         public Camera(int pixelwidth, int pixelheight, double cx = 0.0, double cy = 0.0, double zoom = 1.0, double zoomsentivity = 0.5)
         {
             Center = new Point(cx, cy);
+            Width = pixelwidth;
+            Height = pixelheight;
             Zoom = zoom;
             ZoomSentivity = zoomsentivity;
         }

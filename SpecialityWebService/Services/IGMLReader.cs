@@ -10,6 +10,8 @@ namespace SpecialityWebService.Services
         public Rectangle GetBoundaryBox();
         public int GetFeatureCount();
         public IEnumerable<XElement> GetFeatureEnumerator();
+        public IEnumerable<Path> GetPathEnumerator(Rectangle bbox);
+        public IEnumerable<Path> GetPathEnumerator(Rectangle bbox, List<string> columns2extract);
         public List<Point> GetPathPoints(XElement elem);
     }
 }

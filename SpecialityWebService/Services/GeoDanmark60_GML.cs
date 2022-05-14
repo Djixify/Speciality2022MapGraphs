@@ -113,12 +113,39 @@ namespace SpecialityWebService
 
         public IEnumerable<XElement> GetFeatureEnumerator()
         {
-            return null;
+            return Doc.Root.Elements().Where(elem => elem.Name.LocalName == "featureMember");
+        }
+
+        public IEnumerable<Path> GetPathEnumerator(Rectangle bbox)
+        {
+            return GetPathEnumerator(bbox, new List<string>());
+        }
+
+        public IEnumerable<Path> GetPathEnumerator(Rectangle bbox, List<string> columns2extract)
+        {
+            int i = 0;
+            List<Path> paths = new List<Path>();
+            foreach (XElement feature in GetFeatureEnumerator())
+            {
+                Path path = Path.FromXML(i, feature, columns2extract);
+                if (path.BoundaryBox.Overlapping(bbox))
+                {
+                    paths.Add(path);
+                }
+                i++;
+            }
+            return paths;
         }
 
         public List<Point> GetPathPoints(XElement elem)
         {
-            throw new System.NotImplementedException();
+            if (elem.Name.LocalName != "featureMember")
+                throw new XmlException("Expected a featureMember when parsing path points");
+
+            List<Point> path = new List<Point>();
+
+
+            return path;
         }
     }
 }

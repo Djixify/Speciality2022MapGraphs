@@ -30,14 +30,9 @@ namespace SpecialityWebService.Controllers
         [HttpGet("generate/token={wmstoken};dataset={dataset};bbox={minx},{miny},{maxx},{maxy}")]
         public FileContentResult Get(string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", double minx = 586835.1, double miny = 6135927.2, double maxx = 591812.3, double maxy = 6139738.0)
         {
-            DataforsyningenBackground_WMS wms = new DataforsyningenBackground_WMS();
-            wms.SetBoundaryBox(minx, miny, maxx, maxy);
-            double width = 1280;
-            double height = width * (wms.BBox.Height / wms.BBox.Width);
-            wms.PixelWidth = (int)width;
-            wms.PixelHeight = (int)height;
+            DataforsyningenBackground_WMS wms = new DataforsyningenBackground_WMS(wmstoken);
 
-            Map.Dataset ds = Map.Dataset.VejmanHastigheder;
+            Map.Dataset ds;
             switch (dataset)
             {
                 case "geodanmark60":
@@ -62,13 +57,8 @@ namespace SpecialityWebService.Controllers
             if (service == "wms")
             {
                 DataforsyningenBackground_WMS wms = new DataforsyningenBackground_WMS();
-                wms.SetBoundaryBox(588352.5683496139245, 6136975.095706283115, 588872.8597855410771, 6138732.095496748574);
-                double width = 500;
-                double height = 500 * (wms.BBox.Height / wms.BBox.Width);
-                wms.PixelWidth = (int)width;
-                wms.PixelHeight = (int)height;
 
-                return File(wms.GetImageBytes() ?? new byte[0], "image/jpg");
+                return File(wms.GetImageBytes(588352.5683496139245, 6136975.095706283115, 588872.8597855410771, 6138732.095496748574, 1280), "image/jpg");
             }
             else
             {

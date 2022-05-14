@@ -38,9 +38,12 @@ namespace SpecialityWebService
             }
 
             public static Rectangle Zero() => Rectangle.FromLTRB(0.0, 0.0, 0.0, 0.0);
+            public static Rectangle Infinite() => Rectangle.FromLTRB(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity, double.NegativeInfinity);
             public static Rectangle InfiniteInverse() => Rectangle.FromLTRB(double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity, double.PositiveInfinity);
 
             public Point GetCenter() => new Point(MinX + (MaxX - MinX) / 2.0, MinY + (MaxY - MinY) / 2.0);
+
+            public bool Overlapping(Rectangle other) => !(this.Right < other.Left || this.Left > other.Right || this.Bottom > other.Top || this.Top < other.Bottom);
 
             public override string ToString()
             {

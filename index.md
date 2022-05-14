@@ -15,7 +15,7 @@
         <h1>GeeksforGeeks</h1>
         <h3>Click on the button to see image</h3>
         <img id="image" src=
-            "https://media.geeksforgeeks.org/wp-content/uploads/20210915115837/gfg3.png"
+            "https://localhost:44342/Map/generate/token=024b9d34348dd56d170f634e067274c6;dataset=geodanmark60%2Fvejmanhastigheder;bbox=586835.1,6135927.2,591812.3,6139738"
                 alt="GFG image" />
     </div>
 

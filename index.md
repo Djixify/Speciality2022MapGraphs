@@ -2,35 +2,41 @@
 
 <html lang="en">
 <head>
-
+    <style>
+ 
+    /* Set display to none for image*/
+    #image {
+        display: none;
+    }
+    </style>
 </head>
-    <body>
-        <div>
-            <h1>GeeksforGeeks</h1>
-            <h3>Click on the button to see image</h3>
-            <img id="image" src=
-                "https://media.geeksforgeeks.org/wp-content/uploads/20210915115837/gfg3.png"
-                    alt="GFG image" />
-        </div>
-    
-        <button type="button"
-            onclick="show()" id="btnID">
-            Show Image
-        </button>
-    
-        <script>
-            function show() {
-    
-                /* Access image by id and change
-                the display property to block*/
-                document.getElementById('image')
-                        .style.display = "block";
-    
-                document.getElementById('btnID')
-                        .style.display = "none";
-            }
-        </script>
-    </body>
+<body>
+    <div>
+        <h1>GeeksforGeeks</h1>
+        <h3>Click on the button to see image</h3>
+        <img id="image" src=
+            "https://media.geeksforgeeks.org/wp-content/uploads/20210915115837/gfg3.png"
+                alt="GFG image" />
+    </div>
+
+    <button type="button"
+        onclick="show()" id="btnID">
+        Show Image
+    </button>
+
+    <script>
+        function show() {
+
+            /* Access image by id and change
+            the display property to block*/
+            document.getElementById('image')
+                    .style.display = "block";
+
+            document.getElementById('btnID')
+                    .style.display = "none";
+        }
+    </script>
+</body>
 </html>
 
 ## Welcome to GitHub Pages

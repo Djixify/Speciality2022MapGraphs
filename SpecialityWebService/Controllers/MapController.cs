@@ -95,6 +95,7 @@ namespace SpecialityWebService.Controllers
         {
             TryConvertDataset(dataset, out Map.Dataset ds);
             maps[IP] = new Map(wmstoken, ds, minresolution, minx, miny, maxx, maxy);
+            HttpContext.Response.StatusCode = 200;
         }
 
         [HttpPost("startsession/token={wmstoken};dataset={dataset};minres={minresolution}")]
@@ -102,6 +103,7 @@ namespace SpecialityWebService.Controllers
         {
             TryConvertDataset(dataset, out Map.Dataset ds);
             maps[IP] = new Map(wmstoken, ds, minresolution);
+            HttpContext.Response.StatusCode = 200;
         }
 
         [HttpPost("startsession/token={wmstoken};dataset={dataset};width={width},height={height}")]
@@ -109,6 +111,7 @@ namespace SpecialityWebService.Controllers
         {
             TryConvertDataset(dataset, out Map.Dataset ds);
             maps[IP] = new Map(wmstoken, ds, width, height);
+            HttpContext.Response.StatusCode = 200;
         }
 
         [HttpPost("changedataset={dataset}")]
@@ -132,7 +135,8 @@ namespace SpecialityWebService.Controllers
             }
             if (maps.ContainsKey(IP))
             {
-                HttpContext.Response.StatusCode = 202;
+                System.Diagnostics.Debug.WriteLine("Changed dataset to " + ds.ToString());
+                HttpContext.Response.StatusCode = 200;
                 maps[IP].ActiveDataset = ds;
             }
             else

@@ -75,7 +75,6 @@ namespace SpecialityWebService
                     if (geom.Name.LocalName == "LineString")
                     {
                         _pointsplits.Add(_points.Count);
-                        _boundarybox = Rectangle.InfiniteInverse();
                         XElement poslist = geom.Elements().ElementAt(0);
                         string[] positionpairs = poslist.Value.Split(' ');
                         for (int i = 0; i < positionpairs.Length; i += 2)

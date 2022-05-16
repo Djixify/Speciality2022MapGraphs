@@ -79,7 +79,20 @@ function toggledebug() {
         .finally(_ => {console.log("updated image"); 
         $('#map').css('background-image', 'url(\"https://' + server + '/Map?t=' + (new Date().getTime()) + '\")');
         $('#map').css('background-position-x', 0);
-        $('#map').css('background-position-y', 0);})
+        $('#map').css('background-position-y', 0);
+	})
+}
+
+function changedataset(){
+	var x = document.getElementById("datasetselector").value;
+	console.log("changed dataset " + x);
+	dataset = datasets[parseInt(x)]
+	fetch("https://" + server + "/Map/changedataset=" + dataset, {method: "POST"})
+        .finally(_ => {console.log("updated image"); 
+        $('#map').css('background-image', 'url(\"https://' + server + '/Map?t=' + (new Date().getTime()) + '\")');
+        $('#map').css('background-position-x', 0);
+        $('#map').css('background-position-y', 0);
+	})
 }
 
 function moveMap(moveX, moveY) {

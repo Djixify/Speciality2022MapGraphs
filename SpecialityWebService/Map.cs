@@ -1,10 +1,12 @@
-﻿using SpecialityWebService.Services;
+﻿using Microsoft.AspNetCore.Http;
+using SpecialityWebService.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using static SpecialityWebService.MathObjects;
 
@@ -40,8 +42,56 @@ namespace SpecialityWebService
                 }
             }
         }
+        public bool Debug { get; set; } = true;
         public IGMLReader GML { get; set; } = null;
         public Camera Camera { get; set; }
+
+        public Map(string token, Dataset dataset, int minresolution)
+        {
+            BackgroundWMS = new DataforsyningenBackground_WMS(token); //Remember parse token
+
+            ActiveDataset = dataset;
+
+            Rectangle r = GML.GetBoundaryBox();
+
+            double width = r.MaxX - r.MinX;
+            double height = r.MaxY - r.MinY;
+            double wtmp, htmp;
+            if (width < height)
+            {
+                wtmp = minresolution;
+                htmp = minresolution * ((r.MaxY - r.MinY) / (r.MaxX - r.MinX));
+            }
+            else
+            {
+                htmp = minresolution;
+                wtmp = minresolution * ((r.MaxX - r.MinX) / (r.MaxY - r.MinY));
+            }
+            int pixelWidth = (int)wtmp;
+            int pixelHeight = (int)htmp;
+
+
+            Camera = new Camera(pixelWidth, pixelHeight, r.GetCenter().X, r.GetCenter().Y, pixelWidth / width);
+
+            System.Diagnostics.Debug.WriteLine(GML.GetFeatureCount());
+            System.Diagnostics.Debug.WriteLine(GML.GetBoundaryBox());
+        }
+
+        public Map(string token, Dataset dataset, int width, int height)
+        {
+            BackgroundWMS = new DataforsyningenBackground_WMS(token); //Remember parse token
+
+            ActiveDataset = dataset;
+
+            Rectangle r = GML.GetBoundaryBox();
+
+            double worldwidth = r.MaxX - r.MinX;
+
+            Camera = new Camera(width, height, r.GetCenter().X, r.GetCenter().Y, width / worldwidth);
+
+            System.Diagnostics.Debug.WriteLine(GML.GetFeatureCount());
+            System.Diagnostics.Debug.WriteLine(GML.GetBoundaryBox());
+        }
 
         public Map(string token, Dataset dataset, int minresolution, double minx, double miny, double maxx, double maxy)
         {
@@ -70,19 +120,17 @@ namespace SpecialityWebService
 
             System.Diagnostics.Debug.WriteLine(GML.GetFeatureCount());
             System.Diagnostics.Debug.WriteLine(GML.GetBoundaryBox());
-            Path p = Path.FromXML(0, GML.GetFeatureEnumerator().ElementAt(0), new List<string>() { "TILKMT", "TILKM" });
+            //Path p = Path.FromXML(0, GML.GetFeatureEnumerator().ElementAt(0), new List<string>() { "gml_id", "TILKMT", "TILKM" });
         }
 
-        public GraphicsPath ConvertToGraphicsPath(Path path)
-        {
-            GraphicsPath gp = new GraphicsPath();
-            gp.AddLines(path.Points.Select(p => new System.Drawing.PointF((float)p.X, (float)p.Y)).ToArray());
-            return gp;
-        }
+        public System.Drawing.PointF[] ConvertToGraphicsPath(Path path) => 
+            path.Points.Select(p => new System.Drawing.PointF((float)p.X, (float)p.Y)).ToArray();
 
-        public GraphicsPath ConcatenatePaths(IEnumerable<Path> paths) => paths.Aggregate(new GraphicsPath(), (acc, path) => { acc.AddPath(ConvertToGraphicsPath(path), false); return acc; });
+        public System.Drawing.PointF[] ConcatenatePaths(IEnumerable<Path> paths) => 
+            paths.Aggregate(new List<System.Drawing.PointF>(), (acc, path) => 
+                { acc.AddRange(ConvertToGraphicsPath(path)); return acc; }).ToArray();
 
-        public byte[] RenderImage(System.Drawing.Imaging.ImageFormat format)
+        public byte[] RenderImage(System.Drawing.Imaging.ImageFormat format, HttpContext context = null)
         {
             byte[] background = BackgroundWMS.GetImageBytes(Camera);
             Rectangle screenview = Camera.ScreenViewPort;
@@ -105,13 +153,14 @@ namespace SpecialityWebService
 
                 this.Camera.TransformSpaceToWorld(g);
 
+                int numberofpaths = 0;
                 if (GML != null)
                 {
-                    //g.DrawPath(new System.Drawing.Pen(System.Drawing.Brushes.IndianRed, 2f), ConcatenatePaths(GML.GetPathEnumerator(Camera.WorldViewPort, new List<string>())));
-                    
-                    foreach (Path path in GML.GetPathEnumerator(Rectangle.Infinite()))
+                    IEnumerable<Path> paths = GML.GetPathEnumerator(this.Camera.WorldViewPort);
+                    foreach (Path path in GML.GetPathEnumerator(this.Camera.WorldViewPort, new List<string>() { }))
                     {
-                        g.DrawPath(new System.Drawing.Pen(System.Drawing.Brushes.IndianRed, 2f), ConvertToGraphicsPath(path));
+                        g.DrawLines(new System.Drawing.Pen(System.Drawing.Color.FromArgb(50,200,40,40), (float)(3 / Camera.Zoom)), ConvertToGraphicsPath(path));
+                        numberofpaths++;
                     }
                 }
 
@@ -119,13 +168,21 @@ namespace SpecialityWebService
 
                 //g.FillRectangle(System.Drawing.Brushes.Beige, (int)p1.X, (int)p1.Y, 200, 100);
 
-
                 g.Restore(before);
 
                 sw.Stop();
 
-                g.DrawString("Rendertime: " + sw.ElapsedMilliseconds + "ms", new System.Drawing.Font("Ariel", 20, System.Drawing.FontStyle.Italic | System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel), System.Drawing.Brushes.LimeGreen, new System.Drawing.PointF(10, 10));
+                
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine("Rendertime: " + sw.ElapsedMilliseconds + "ms");
+                sb.AppendLine("Number of paths rendered: " + numberofpaths);
+                sb.AppendLine("Position(center): " + Math.Round(Camera.Center.X,2) + "x " + Math.Round(Camera.Center.Y,2) + "y");
+                sb.AppendLine("Zoom: " + Math.Round(Camera.Zoom,3) + " Scale: 1:" + (int)(worldview.Width / screenview.Width));
 
+                if (Debug)
+                    g.DrawString(sb.ToString(), new System.Drawing.Font("Ariel", 20, System.Drawing.FontStyle.Italic | System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel), System.Drawing.Brushes.LimeGreen, new System.Drawing.PointF(10, 10));
+                if (context != null)
+                    context.Response.Headers.Add("stats", new Microsoft.Extensions.Primitives.StringValues(System.Net.WebUtility.UrlEncode(sb.ToString())));
 
                 MemoryStream ms2 = new MemoryStream();
                 bm.Save(ms2, format);

@@ -57,7 +57,9 @@ namespace SpecialityWebService
         public byte[] GetImageBytes(Camera camera)
         {
             List<byte> image = new List<byte>();
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(GenerateUrl(camera));
+            string url = GenerateUrl(camera);
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            System.Diagnostics.Debug.WriteLine("Fetching wms area: " + url);
             try
             {
                 using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())

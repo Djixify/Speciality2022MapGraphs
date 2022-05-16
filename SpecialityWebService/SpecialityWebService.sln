@@ -5,7 +5,12 @@ VisualStudioVersion = 17.1.32319.34
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpecialityWebService", "SpecialityWebService.csproj", "{099C6A39-FBC0-44C9-B267-B7787495F7DD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpecialityProgram", "..\SpecialityProgram\SpecialityProgram.csproj", "{0D8ED76C-B98E-4B65-B4B1-8ABB75E8ED85}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpecialityProgram", "..\SpecialityProgram\SpecialityProgram.csproj", "{0D8ED76C-B98E-4B65-B4B1-8ABB75E8ED85}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B68ADC7A-F905-47A4-862F-092D7634CE0F}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

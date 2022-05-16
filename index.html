@@ -1,0 +1,26 @@
+<html lang="en">
+<head>
+    <style>
+    #map {
+        background: url("https://localhost:44342/Map") no-repeat;
+        overflow: hidden;
+        align-content: center;
+    }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js">
+        //"https://localhost:44342/Map/generate/token=024b9d34348dd56d170f634e067274c6;dataset=geodanmark60%2Fvejmanhastigheder;bbox=586835.1,6135927.2,591812.3,6139738"
+    </script>
+</head>
+<body>
+  <div>
+      <h1>Map network generator</h1>
+      <div>
+        <img id="map"/>
+      </div>
+      <button onclick="zoominclicked()">zoom in</button>
+      <button onclick="zoomoutclicked()">zoom out</button>
+      <button onclick="toggledebug()">debug</button>
+  </div>
+  <script src="map.js" ></script>
+</body>
+</html>

@@ -9,6 +9,9 @@ namespace SpecialityWebService
             public double X, Y;
             public Point(double x, double y) { X = x; Y = y; }
 
+            public static Point operator +(Point me, Point other) => new Point(me.X + other.X, me.Y + other.Y);
+            public static Point operator -(Point me, Point other) => new Point(me.X - other.X, me.Y - other.Y);
+
             public override string ToString()
             {
                 return $"({X.ToString(CultureInfo.InvariantCulture)},{Y.ToString(CultureInfo.InvariantCulture)})";

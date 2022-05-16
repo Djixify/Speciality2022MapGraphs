@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,72 +20,159 @@ namespace SpecialityWebService.Controllers
     [Route("[controller]")]
     public class MapController : ControllerBase
     {
-        [HttpGet]
-        public FileContentResult Get()
-        {
-            Byte[] b = System.IO.File.ReadAllBytes(@".\Resources\Images\gandalf_nyhed.jpg");
-            return File(b, "image/jpeg");
-        }
+        private static Dictionary<string, Map> maps = new Dictionary<string, Map>();
+        private string IP => HttpContext.Connection.RemoteIpAddress.ToString() ?? HttpContext.Connection.LocalIpAddress.ToString();
 
-        // GET: /Map
-        [HttpGet("generate/token={wmstoken};dataset={dataset};bbox={minx},{miny},{maxx},{maxy}")]
-        public FileContentResult Get(string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", double minx = 586835.1, double miny = 6135927.2, double maxx = 591812.3, double maxy = 6139738.0)
+        private bool TryConvertDataset(string input, out Map.Dataset ds)
         {
-            DataforsyningenBackground_WMS wms = new DataforsyningenBackground_WMS(wmstoken);
-
-            Map.Dataset ds;
-            switch (dataset)
+            switch (input)
             {
                 case "geodanmark60":
                     ds = Map.Dataset.GeoDanmark60;
-                    break;
+                    return true;
                 case "vejmanhastigheder":
                     ds = Map.Dataset.VejmanHastigheder;
-                    break;
+                    return true;
                 default:
                     ds = Map.Dataset.VejmanHastigheder;
-                    break;
+                    return false;
             }
+        }
+
+        private void NoMapInstanciatedStatus()
+        {
+            HttpContext.Response.StatusCode = 400;
+            HttpContext.Response.Headers.Add(new KeyValuePair<string, StringValues>("response", new StringValues("No map instantiated, please call post on 'generate/startsession/token={wmstoken};dataset={dataset};minres={minresolution}' first")));
+        }
+
+        [HttpGet]
+        public FileContentResult Get()
+        {
+            if (!maps.ContainsKey(IP))
+            {
+                NoMapInstanciatedStatus();
+                //Gandalf momento
+                Byte[] b = System.IO.File.ReadAllBytes(@".\Resources\Images\gandalf_nyhed.jpg");
+                return File(b, "image/jpeg");
+            }
+            return File(maps[IP].RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, HttpContext), "image/jpg");
+        }
+
+        // GET: /Map
+        [HttpGet("token={wmstoken};dataset={dataset};bbox={minx},{miny},{maxx},{maxy}")]
+        public FileContentResult Get(string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", double minx = 586835.1, double miny = 6135927.2, double maxx = 591812.3, double maxy = 6139738.0)
+        {
+            Map.Dataset ds;
+            TryConvertDataset(dataset, out ds);
 
             Map map = new Map(wmstoken, ds, 1280, minx, miny, maxx, maxy);
 
-            return File(map.RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg), "image/jpg");
+            return File(map.RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, HttpContext), "image/jpg");
         }
 
-        [HttpGet("service={service}")]
-        public FileContentResult Get(string service)
+        [HttpGet("getvalue={value}")]
+        public ContentResult Get(string value)
         {
-            if (service == "wms")
+            if (!maps.ContainsKey(IP))
             {
-                DataforsyningenBackground_WMS wms = new DataforsyningenBackground_WMS();
+                NoMapInstanciatedStatus();
+                return Content("");
+            }
 
-                return File(wms.GetImageBytes(588352.5683496139245, 6136975.095706283115, 588872.8597855410771, 6138732.095496748574, 1280), "image/jpg");
+            switch(value)
+            {
+                case "screensize":
+                    Rectangle screenview = maps[IP].Camera.ScreenViewPort;
+                    return Content((int)screenview.Width + "," + (int)screenview.Height);
+                default:
+                    HttpContext.Response.StatusCode = 400;
+                    return Content("");
+            }
+        }
+
+        [HttpPost("startsession/token={wmstoken};dataset={dataset};minres={minresolution};bbox={minx},{miny},{maxx},{maxy}")]
+        public void Post(string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", int minresolution = 1280, double minx = 586835.1, double miny = 6135927.2, double maxx = 591812.3, double maxy = 6139738.0)
+        {
+            TryConvertDataset(dataset, out Map.Dataset ds);
+            maps[IP] = new Map(wmstoken, ds, minresolution, minx, miny, maxx, maxy);
+        }
+
+        [HttpPost("startsession/token={wmstoken};dataset={dataset};minres={minresolution}")]
+        public void Post(string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", int minresolution = 1280)
+        {
+            TryConvertDataset(dataset, out Map.Dataset ds);
+            maps[IP] = new Map(wmstoken, ds, minresolution);
+        }
+
+        [HttpPost("startsession/token={wmstoken};dataset={dataset};width={width},height={height}")]
+        public void Post(string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", int width = 1280, int height = 960)
+        {
+            TryConvertDataset(dataset, out Map.Dataset ds);
+            maps[IP] = new Map(wmstoken, ds, width, height);
+        }
+
+        [HttpPost("changedataset={dataset}")]
+        public void Post(string dataset = "geodanmark60/vejmanhastigheder")
+        {
+            Map.Dataset ds;
+            switch (dataset)
+            { 
+                case "geodanmark60":
+                    ds = Map.Dataset.GeoDanmark60;
+                    HttpContext.Response.Headers.Add(new KeyValuePair<string, StringValues>("response", new StringValues("Changed dataset to geodanmark60")));
+                    break;
+                case "vejmanhastigheder":
+                    ds = Map.Dataset.VejmanHastigheder;
+                    HttpContext.Response.Headers.Add(new KeyValuePair<string, StringValues>("response", new StringValues("Changed dataset to vejmanhastigheder")));
+                    break;
+                default:
+                    HttpContext.Response.StatusCode = 400;
+                    HttpContext.Response.Headers.Add(new KeyValuePair<string, StringValues>("response", new StringValues("Expected either geodanmark60/vejmanhastigheder")));
+                    return;
+            }
+            if (maps.ContainsKey(IP))
+            {
+                HttpContext.Response.StatusCode = 202;
+                maps[IP].ActiveDataset = ds;
             }
             else
-            {
-                return null;
-            }
+                NoMapInstanciatedStatus();
         }
 
-        // POST /Map
-        [HttpPost]
-        public void Post([FromBody] JsonDocument value)
+        [HttpPost("move={x},{y}")]
+        public void Post(int x, int y)
         {
-            System.Diagnostics.Debug.WriteLine("Test: " + value.ToString());
+            if (maps.ContainsKey(IP))
+                maps[IP].Camera.MoveScreen(x,y);
+            else
+                NoMapInstanciatedStatus();
         }
 
-        // PUT api/<ValuesController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] JsonDocument value)
+        [HttpPost("zoom={zoom}")]
+        public void Post(double zoom)
         {
-            System.Diagnostics.Debug.WriteLine("Test " + id + ": " + value);
+            if (maps.ContainsKey(IP))
+                maps[IP].Camera.ZoomView(zoom);
+            else
+                NoMapInstanciatedStatus();
         }
 
-        // DELETE api/<ValuesController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        [HttpPost("debug={debug}")]
+        public void Post(bool debug)
         {
+            if (maps.ContainsKey(IP))
+                maps[IP].Debug = debug;
+            else
+                NoMapInstanciatedStatus();
+        }
 
+        [HttpPost("setscreensize={width},{height}")]
+        public void Post2(int width, int height)
+        {
+            if (maps.ContainsKey(IP))
+                maps[IP].Camera.SetScreenSize(width, height);
+            else
+                NoMapInstanciatedStatus();
         }
     }
 }

@@ -40,11 +40,12 @@ namespace SpecialityWebService
         public string Fid { get; set; } = null;
         public Dictionary<string, string> ColumnValues { get; private set; } = null;
 
-        public static Path FromXML(int id, XElement featureMember, List<string> columns2extract)
+        public static List<Path> FromXML(int id, XElement featureMember, List<string> columns2extract)
         {
             if (featureMember.Name.LocalName != "featureMember")
                 throw new XmlException("Was not given a featureMember element");
             List<Point> _points = new List<Point>();
+            List<int> _pointsplits = new List<int>();
             string _fid = null;
             int _id = id;
             Rectangle _boundarybox = Rectangle.InfiniteInverse();
@@ -68,15 +69,12 @@ namespace SpecialityWebService
                     _boundarybox.MaxX = Double.Parse(uppercoords[0], CultureInfo.InvariantCulture);
                     _boundarybox.MaxY = Double.Parse(uppercoords[1], CultureInfo.InvariantCulture);
                 }
-                else if (columns2extract.Contains(column.Name.LocalName))
-                {
-                    columnvalues.Add(column.Name.LocalName, column.Value);
-                }
                 else if (column.Name.LocalName == "geometryProperty")
                 {
                     XElement geom = column.Elements().ElementAt(0);
                     if (geom.Name.LocalName == "LineString")
                     {
+                        _pointsplits.Add(_points.Count);
                         _boundarybox = Rectangle.InfiniteInverse();
                         XElement poslist = geom.Elements().ElementAt(0);
                         string[] positionpairs = poslist.Value.Split(' ');
@@ -98,6 +96,7 @@ namespace SpecialityWebService
                     {
                         foreach (XElement member in geom.Elements())
                         {
+                            _pointsplits.Add(_points.Count);
                             if (member.Elements().ElementAt(0).Name.LocalName == "LineString")
                             {
                                 XElement path = member.Elements().ElementAt(0);
@@ -120,15 +119,30 @@ namespace SpecialityWebService
                         }
                     }
                 }
+                else if (columns2extract.Contains(column.Name.LocalName))
+                {
+                    columnvalues.Add(column.Name.LocalName, column.Value);
+                }
             }
 
-            Path p = new Path();
-            p.Points = _points;
-            p.BoundaryBox = _boundarybox;
-            p.Id = _id;
-            p.Fid = _fid;
-            p.ColumnValues = columnvalues;
-            return p;
+            foreach (string column in columns2extract)
+            {
+                if (!columnvalues.ContainsKey(column))
+                    columnvalues[column] = null;
+            }
+
+            List<Path> paths = new List<Path>();
+            for (int i = 0; i < _pointsplits.Count; i++)
+            { 
+                Path p = new Path();
+                p.Points = _points.GetRange(_pointsplits[i], i < _pointsplits.Count - 1 ? _pointsplits[i + 1] - _pointsplits[i] : _points.Count - _pointsplits[i]);
+                p.BoundaryBox = _boundarybox;
+                p.Id = _id;
+                p.Fid = _fid;
+                p.ColumnValues = columnvalues;
+                paths.Add(p);
+            }
+            return paths;
         }
     }
 }

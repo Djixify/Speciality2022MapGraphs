@@ -22,6 +22,8 @@ namespace SpecialityWebService
             File = file;
             _fileStream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
             Doc = XDocument.Load(file);
+            if (Doc.Root.Name.LocalName != "FeatureCollection")
+                throw new XmlException("Invalid gml file, expected a feature collection as the root");
         }
 
         public Rectangle GetBoundaryBox()
@@ -29,18 +31,20 @@ namespace SpecialityWebService
             Rectangle box = Rectangle.InfiniteInverse();
             foreach (XElement elm in Doc.Root.Elements())
             {
+                //If file has a boundedBy element, just use that
                 if (elm.Name.LocalName == "boundedBy")
                 {
                     GetRectangleByBounds(elm, ref box);
                     return box;
                 }
+                //Else check through all features for linestrings
                 else if (elm.Name.LocalName == "featureMember")
                 {
                     XElement boundelement = elm.Elements().ElementAt(0).Elements().ElementAt(0);
+                    //If Linestring has a boundedBy use that
                     if (boundelement.Name.LocalName == "boundedBy")
-                    {
                         UpdateRectangleByBounds(boundelement, ref box);
-                    }
+                    //Else compute the new bounds based on every point in the linestring
                     else
                     {
                         foreach (XElement feature in elm.Elements().ElementAt(0).Elements())
@@ -84,11 +88,11 @@ namespace SpecialityWebService
             }
             else if (boundedBy.Name.LocalName == "geometryProperty")
             {
-                XElement path = boundedBy.Elements().ElementAt(0);
+                XElement curve = boundedBy.Elements().ElementAt(0);
                 //Do not support anything but linestrings for now
-                if (path.Name.LocalName == "LineString")
+                if (curve.Name.LocalName == "LineString")
                 {
-                    XElement poslist = path.Elements().ElementAt(0);
+                    XElement poslist = curve.Elements().ElementAt(0);
                     string[] positionpairs = poslist.Value.Split(' ');
                     for (int i = 0; i < positionpairs.Length; i += 2)
                     {
@@ -98,6 +102,27 @@ namespace SpecialityWebService
                         rect.MinY = Math.Min(rect.MinY, y);
                         rect.MaxX = Math.Max(rect.MaxX, x);
                         rect.MaxY = Math.Max(rect.MaxY, y);
+                    }
+                }
+                if (curve.Name.LocalName == "MultiCurve")
+                {
+                    foreach (XElement member in curve.Elements())
+                    {
+                        if (member.Elements().ElementAt(0).Name.LocalName == "LineString")
+                        {
+                            XElement path = member.Elements().ElementAt(0);
+                            XElement poslist = path.Elements().ElementAt(0);
+                            string[] positionpairs = poslist.Value.Split(' ');
+                            for (int i = 0; i < positionpairs.Length; i += 2)
+                            {
+                                double x = Double.Parse(positionpairs[i], CultureInfo.InvariantCulture);
+                                double y = Double.Parse(positionpairs[i + 1], CultureInfo.InvariantCulture);
+                                rect.MinX = Math.Min(rect.MinX, x);
+                                rect.MinY = Math.Min(rect.MinY, y);
+                                rect.MaxX = Math.Max(rect.MaxX, x);
+                                rect.MaxY = Math.Max(rect.MaxY, y);
+                            }
+                        }
                     }
                 }
             }
@@ -127,25 +152,16 @@ namespace SpecialityWebService
             List<Path> paths = new List<Path>();
             foreach (XElement feature in GetFeatureEnumerator())
             {
-                Path path = Path.FromXML(i, feature, columns2extract);
-                if (path.BoundaryBox.Overlapping(bbox))
-                {
-                    paths.Add(path);
-                }
+                List<Path> parsedpaths = Path.FromXML(i, feature, columns2extract);
+                paths.AddRange(parsedpaths.Where(p => p.BoundaryBox.Overlapping(bbox)));
                 i++;
             }
             return paths;
         }
 
-        public List<Point> GetPathPoints(XElement elem)
+        public void Dispose()
         {
-            if (elem.Name.LocalName != "featureMember")
-                throw new XmlException("Expected a featureMember when parsing path points");
-
-            List<Point> path = new List<Point>();
-
-
-            return path;
+            _fileStream.Close();
         }
     }
 }

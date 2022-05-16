@@ -18,7 +18,7 @@ namespace SpecialityWebService
             get
             {
                 double halfwidth = Width / Zoom / 2.0, halfheight = Height / Zoom / 2.0;
-                return new Rectangle(Center.X - halfwidth, Center.Y - halfheight, halfwidth, halfheight);
+                return new Rectangle(Center.X, Center.Y, halfwidth, halfheight);
             }
         }
         public Rectangle ScreenViewPort { get => Rectangle.FromLTRB(0, Height, Width, 0); }
@@ -60,6 +60,27 @@ namespace SpecialityWebService
         public System.Drawing.RectangleF ToSystemRectangleF(Rectangle rect)
         {
             return System.Drawing.RectangleF.FromLTRB((float)rect.Left, (float)rect.Bottom, (float)rect.Right, (float)rect.Top);
+        }
+
+        public void MoveScreen(int x, int y)
+        {
+            Center += new Point(x / Zoom, y / Zoom);
+        }
+
+        public void MoveWorld(double x, double y)
+        {
+            Center += new Point(x,y);
+        }
+
+        public void SetScreenSize(int width, int height)
+        {
+            Width = width;
+            Height = height;
+        }
+
+        public void ZoomView(double zoom)
+        {
+            Zoom *= zoom;
         }
 
         public void TransformSpaceToWorld(System.Drawing.Graphics g)

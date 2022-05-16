@@ -89,6 +89,20 @@ namespace SpecialityWebService
             {
                 XElement curve = boundedBy.Elements().ElementAt(0);
                 //Do not support anything but linestrings for now
+                if (curve.Name.LocalName == "LineString")
+                {
+                    XElement poslist = curve.Elements().ElementAt(0);
+                    string[] positionpairs = poslist.Value.Split(' ');
+                    for (int i = 0; i < positionpairs.Length; i += 2)
+                    {
+                        double x = Double.Parse(positionpairs[i], CultureInfo.InvariantCulture);
+                        double y = Double.Parse(positionpairs[i + 1], CultureInfo.InvariantCulture);
+                        rect.MinX = Math.Min(rect.MinX, x);
+                        rect.MinY = Math.Min(rect.MinY, y);
+                        rect.MaxX = Math.Max(rect.MaxX, x);
+                        rect.MaxY = Math.Max(rect.MaxY, y);
+                    }
+                }
                 if (curve.Name.LocalName == "MultiCurve")
                 {
                     foreach (XElement member in curve.Elements())
@@ -137,25 +151,11 @@ namespace SpecialityWebService
             List<Path> paths = new List<Path>();
             foreach (XElement feature in GetFeatureEnumerator())
             {
-                Path path = Path.FromXML(i, feature, columns2extract);
-                if (path.BoundaryBox.Overlapping(bbox))
-                {
-                    paths.Add(path);
-                }
+                List<Path> parsedpaths = Path.FromXML(i, feature, columns2extract);
+                paths.AddRange(parsedpaths.Where(p => p.BoundaryBox.Overlapping(bbox)));
                 i++;
             }
             return paths;
-        }
-
-        public List<Point> GetPathPoints(XElement elem)
-        {
-            if (elem.Name.LocalName != "featureMember")
-                throw new XmlException("Expected a featureMember when parsing path points");
-
-            List<Point> path = new List<Point>();
-            
-
-            return path;
         }
 
         public void Dispose()

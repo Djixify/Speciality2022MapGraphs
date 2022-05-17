@@ -1,4 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using SpecialityWebService.Network;
 using System.Net;
 
 namespace SpecialityProgram
@@ -7,8 +8,36 @@ namespace SpecialityProgram
     {
         public static void Main(string[] args)
         {
-            while (true)
-                GetWMS().Wait();
+            TestLexer();
+            //while (true)
+                //GetWMS().Wait();
+        }
+
+        public static void TestLexer()
+        {
+            var testcases = new List<Tuple<string, double>>()
+            {
+                new Tuple<string, double>("0", 0),
+                new Tuple<string, double>("9", 9),
+                new Tuple<string, double>("2 + 2", 4),
+                new Tuple<string, double>("0", 0),
+                new Tuple<string, double>("0", 0),
+                new Tuple<string, double>("0", 0),
+                new Tuple<string, double>("0", 0),
+                new Tuple<string, double>("0", 0),
+                new Tuple<string, double>("0", 0),
+                new Tuple<string, double>("0", 0),
+                new Tuple<string, double>("0", 0)
+            };
+
+            foreach(Tuple<string, double> testcase in testcases)
+            {
+                double computed = Parser.ExecuteExpression(testcase.Item1).Value;
+                bool match = Math.Abs(computed - testcase.Item2) < 0.00000001;
+                System.Diagnostics.Debug.WriteLine($"Test: {testcase.Item1}, expected: {testcase.Item2}, result: {(match ? "Matched!" : "No match, got: " + Lexer.GetTokenExpression(testcase.Item1))}");
+            }
+
+            //Parser.ExecuteExpression()
         }
 
         public static async Task GetWMS()

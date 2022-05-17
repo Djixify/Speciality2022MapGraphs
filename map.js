@@ -1,8 +1,8 @@
 //https://localhost:44342
 //http://localhost:8082
 var servers = 
-    ["http://80.210.64.251:8082",
-     "http://localhost:8082",
+    ["https://80.210.64.251:8082",
+     "https://localhost:8082",
      "https://localhost:44342"]
 var server = servers[0]; 
 

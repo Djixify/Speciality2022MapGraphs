@@ -2,6 +2,8 @@
 using SpecialityWebService;
 using SpecialityWebService.Network;
 using System.Net;
+using static SpecialityWebService.Map;
+using static SpecialityWebService.MathObjects;
 using static SpecialityWebService.Network.Parser;
 
 namespace SpecialityProgram
@@ -68,7 +70,39 @@ namespace SpecialityProgram
 
         public static void TestNetwork()
         {
-            Map map = new Map(string token, Dataset dataset, int minresolution)
+            var rtree = new SpecialityWebService.Network.Rtree<Vertex>();
+            Vertex v1 = new Vertex(0, new Point(0, 0), new List<int>(), 0, null);
+            Vertex v2 = new Vertex(1, new Point(1, 1), new List<int>(), 0, null);
+            Vertex v3 = new Vertex(2, new Point(2, 2), new List<int>(), 0, null);
+            rtree.Insert(v1);
+            rtree.Insert(v2);
+            rtree.Insert(v3);
+            List<IQueryItem<Vertex>> items = rtree.Query(new Rectangle(1, 1, 0.5));
+
+            Map map = new Map("024b9d34348dd56d170f634e067274c6", Dataset.VejmanHastigheder, 1280, 960);
+            INetworkGenerator qgis = new QGISReferenceAlgorithm();
+            var paths = new List<SpecialityWebService.Path>() { 
+                new SpecialityWebService.Path() {
+                    Points = new List<Point>() { new Point(0,0), new Point(1,1), new Point(2,2) },
+                    Id = 0,
+                    Fid = null,
+                    ColumnValues = new Dictionary<string, string>(new List<KeyValuePair<string, string>>() {
+                        new KeyValuePair<string, string>("TILKM", "30")
+                    })
+                },
+                new SpecialityWebService.Path() {
+                    Points = new List<Point>() { new Point(1,1), new Point(0,2), new Point(-1,3) },
+                    Id = 0,
+                    Fid = null,
+                    ColumnValues = new Dictionary<string, string>(new List<KeyValuePair<string, string>>() {
+                        new KeyValuePair<string, string>("TILKM", "50")
+                    })
+                }
+            };
+            foreach (SpecialityWebService.Path path in paths)
+                path.UpdateBoundaryBox();
+            Network network = qgis.Generate(map.GML.GetPathEnumerator(Rectangle.Infinite()), 0.5, null, null, new List<string>() { "TILKM" });
+
         }
 
         public static async Task GetWMS()

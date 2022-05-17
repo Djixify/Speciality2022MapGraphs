@@ -40,7 +40,7 @@ namespace SpecialityWebService.Network
             Envelope e = new Envelope(p.X - tolerance, p.Y - tolerance, p.X + tolerance, p.Y + tolerance);
             //Ensure it is a circular area, not square as it was in QGIS implementation
             List<IQueryItem<T>> items = Query(p, tolerance);
-            return items.Count == 0 ? null : Query(p, tolerance).Aggregate(new KeyValuePair<double, IQueryItem<T>>(0.0, null), (acc, item) => 
+            return items.Count == 0 ? null : items.Aggregate(new KeyValuePair<double, IQueryItem<T>>(double.PositiveInfinity, null), (acc, item) => 
             {
                 double distance = item.BoundaryBox.ClosestDistanceToPoint(p);
                 return distance < acc.Key ? new KeyValuePair<double, IQueryItem<T>>(distance, item) : acc;

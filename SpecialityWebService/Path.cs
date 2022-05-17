@@ -23,7 +23,7 @@ namespace SpecialityWebService
 
         public Rectangle BoundaryBox { get; set; }
 
-        private void UpdateBoundaryBox()
+        public void UpdateBoundaryBox()
         {
             Rectangle rect = Rectangle.InfiniteInverse();
             foreach (Point p in Points)
@@ -38,7 +38,7 @@ namespace SpecialityWebService
 
         public int Id { get; set; } = -1;
         public string Fid { get; set; } = null;
-        public Dictionary<string, string> ColumnValues { get; private set; } = null;
+        public Dictionary<string, string> ColumnValues { get; set; } = null;
 
         public static List<Path> FromXML(int id, XElement featureMember, List<string> columns2extract)
         {

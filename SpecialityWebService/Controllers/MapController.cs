@@ -2,9 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+using SpecialityWebService.Network;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -183,6 +185,26 @@ namespace SpecialityWebService.Controllers
             {
                 HttpContext.Response.StatusCode = 200;
                 maps[IP].Debug = debug;
+            }
+            else
+                NoMapInstanciatedStatus();
+        }
+
+        [HttpPost("generatenetwork/weights={weight},tolerance={tolerance}, directioncolumn={directioncolumn},forwardsval={forwardsval},backwardsval={backwardsval}")]
+        public async void Post(string weight, double tolerance, string directioncolumn, string forwardsval, string backwardsval)
+        {
+            if (maps.ContainsKey(IP))
+            {
+                HttpContext.Response.StatusCode = 200;
+                ValueTask<ReadResult> task = HttpContext.Request.BodyReader.ReadAsync();
+                ReadResult result = await task;
+                if (result.IsCompleted)
+                {
+                    string resultstr = result.ToString();
+                    INetworkGenerator qgis = new QGISReferenceAlgorithm();
+                    
+                    Network.Network network = qgis.Generate(maps[IP].GML.GetPathEnumerator(Rectangle.Infinite()), tolerance, directioncolumn, new Dictionary<string, Direction>(new List<KeyValuePair<string, Direction>>() { new KeyValuePair<string, Direction>(forwardsval, Direction.Forward), new KeyValuePair<string, Direction>(backwardsval, Direction.Backward) }), );
+                }
             }
             else
                 NoMapInstanciatedStatus();

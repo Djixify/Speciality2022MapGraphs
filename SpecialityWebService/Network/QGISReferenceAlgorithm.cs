@@ -1,6 +1,7 @@
 ﻿using SpecialityWebService.Network;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using static SpecialityWebService.MathObjects;
@@ -13,16 +14,19 @@ namespace SpecialityWebService.Network
 
         public Network Generate(IEnumerable<Path> paths, double tolerance, string directioncolumn, Dictionary<string, Direction> directionconvert, List<string> weightformulas)
         {
+            int total = paths.Count();
+            int count = 1;
             Rtree<Vertex> rtree = new Rtree<Vertex>();
             int vertexid = 0;
             int edgeid = 0;
             foreach (Path path in paths)
             {
+                System.Diagnostics.Debug.WriteLine($"1/2: Inserting into R-tree: {Math.Round((double)count / (double)total * 100.0, 1)}%");
                 Vertex pt1 = null, pt2 = null;
                 foreach (Point p in path.Points)
                 {
                     pt2 = new Vertex(vertexid, p, new List<int>(), path.Id, path.Fid);
-                    Vertex ext_p = rtree.QueryClosest(p, tolerance).Item;
+                    Vertex ext_p = rtree.QueryClosest(p, tolerance)?.Item;
                     if (ext_p == null)
                     {
                         rtree.Insert(pt2);
@@ -32,11 +36,15 @@ namespace SpecialityWebService.Network
                         pt2 = ext_p;
                     pt1 = pt2;
                 }
+                count++;
             }
+            total = paths.Count();
+            count = 1;
             //Skip insertion of tiepoints as I dont support it
             List<Edge> E = new List<Edge>();
             foreach (Path path in paths)
             {
+                System.Diagnostics.Debug.WriteLine($"2/2: Adding edges based on R-tree: {Math.Round((double)count / (double)total * 100.0, 1)}%");
                 Vertex pt1 = null, pt2 = null;
                 bool isFirstPoint1 = true;
                 foreach (Point p in path.Points)
@@ -56,14 +64,15 @@ namespace SpecialityWebService.Network
                             if (!isFirstPoint2)
                             {
                                 List<KeyValuePair<string, double>> weights = WeightCalculator.ComputeWeight(orderedVertices.Select(v => v.Item2.Location), path, weightformulas, path.ColumnValues);
+                                weights.Add(new KeyValuePair<string, double>("distance", v1.Location.Distance(v2.Location)));
                                 //Forwards: 01, Backwards: 10, Both: 11, hence checks both forwards and both below
-                                if ((directionconvert[path.ColumnValues[directioncolumn]] & Direction.Forward) == Direction.Forward)
+                                if (directioncolumn == null || !directionconvert.ContainsKey(path.ColumnValues[directioncolumn]) || (directionconvert[path.ColumnValues[directioncolumn]] & Direction.Forward) == Direction.Forward)
                                 {
                                     Edge e = new Edge(edgeid, v1, v2, Direction.Forward, weights, path.Id, path.Fid, orderedVertices.Select(v => v.Item2.Location));
                                     v1.Edges.Add(e.Index);
                                     E.Add(e);
                                 }
-                                if ((directionconvert[path.ColumnValues[directioncolumn]] & Direction.Forward) == Direction.Backward)
+                                if (directioncolumn == null || !directionconvert.ContainsKey(path.ColumnValues[directioncolumn]) || (directionconvert[path.ColumnValues[directioncolumn]] & Direction.Backward) == Direction.Backward)
                                 {
                                     Edge e = new Edge(edgeid, v2, v1, Direction.Forward, weights, path.Id, path.Fid, orderedVertices.Select(v => v.Item2.Location));
                                     v2.Edges.Add(e.Index);
@@ -77,6 +86,7 @@ namespace SpecialityWebService.Network
                     pt1 = pt2;
                     isFirstPoint1 = false;
                 }
+                count++;
             }
             return new Network(rtree.QueryAll().Select(v => v.Item), E);
         }

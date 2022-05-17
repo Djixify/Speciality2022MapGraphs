@@ -3,9 +3,86 @@
 <head>
     <style>
     #map {
-        background: url("https://localhost:44342/Map") no-repeat;
-        overflow: hidden;
-        align-content: center;
+      background: url("https://localhost:44342/Map") no-repeat;
+      overflow: hidden;
+      align-content: center;
+    }
+    html, body {
+      height: 100%;
+    }
+
+    html {
+      display: table;
+      margin: auto;
+    }
+
+    body {
+      display: table-cell;
+      vertical-align: middle;
+      font-family: Tahoma;
+      background: 
+        radial-gradient(black 3px, transparent 4px),
+        radial-gradient(black 3px, transparent 4px),
+        linear-gradient(#fff 4px, transparent 0),
+        linear-gradient(45deg, transparent 74px, transparent 75px, #a4a4a4 75px, #a4a4a4 76px, transparent 77px, transparent 109px),
+        linear-gradient(-45deg, transparent 75px, transparent 76px, #a4a4a4 76px, #a4a4a4 77px, transparent 78px, transparent 109px),
+      #fff;
+      background-size: 109px 109px, 109px 109px,100% 6px, 109px 109px, 109px 109px;
+      background-position: 54px 55px, 0px 0px, 0px 0px, 0px 0px, 0px 0px;
+    }
+
+    .bodydiv {
+      background-color: #fffe;
+      height: 100%;
+      padding: 20px;
+    }
+
+    .centered {
+      width: 100%;
+      text-align: center;
+    }
+
+    button{
+      background-color: #555;
+      border-color: gray;
+      color: white;
+      text-align: center;
+      border-width: 0px;
+      font-size: 16px;
+      padding: 5px 8px 5px 8px;
+      margin: 5px 5px 5px 5px;
+      border-radius: 5px;
+    }
+
+    button:hover {
+      background-color: black;
+    }
+
+    input{
+      padding: 5px;
+    }
+
+    .container {
+      position: relative;
+      width: 100%;
+    }
+
+    .container img {
+      width: 100%;
+      height: auto;
+    }
+
+    .container .btn1 {
+      position: absolute;
+      bottom: 0%;
+      left: 0%;
+      transform: translate(10px, -50px);
+    }
+    .container .btn2 {
+      position: absolute;
+      bottom: 0%;
+      left: 0%;
+      transform: translate(10px, -10px);
     }
     </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js">
@@ -13,15 +90,15 @@
     </script>
 </head>
 <body>
-  <div>
-      <h1>Map network generator</h1>
+  <div class="bodydiv">
+    <h1 class="centered">Map network generator</h1>
 	  <input type="text" id="server">
 	  <button onclick="updateserver()">Update</button>
-      <div>
+      <div class="container">
         <img id="map"/>
+        <button class="btn1" onclick="zoominclicked()">Zoom in</button>
+        <button class="btn2" onclick="zoomoutclicked()">Zoom out</button>
       </div>
-      <button onclick="zoominclicked()">Zoom in</button>
-      <button onclick="zoomoutclicked()">Zoom out</button>
       <button onclick="toggledebug()">Debug</button>
 	  <select id="datasetselector" onchange="changedataset()">
 		<option value="0">Vejhastigheder small</option>

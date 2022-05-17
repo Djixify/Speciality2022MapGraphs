@@ -177,7 +177,7 @@ namespace SpecialityWebService
                 sb.AppendLine("Rendertime: " + sw.ElapsedMilliseconds + "ms");
                 sb.AppendLine("Number of paths rendered: " + numberofpaths);
                 sb.AppendLine("Position(center): " + Math.Round(Camera.Center.X,2) + "x " + Math.Round(Camera.Center.Y,2) + "y");
-                sb.AppendLine("Zoom: " + Math.Round(Camera.Zoom,3) + " Scale: 1:" + (int)(worldview.Width / screenview.Width));
+                sb.AppendLine("Scale: ~1:" + (int)(worldview.Width / screenview.Width * 37.795275591 * 100));
 
                 if (Debug)
                     g.DrawString(sb.ToString(), new System.Drawing.Font("Ariel", 20, System.Drawing.FontStyle.Italic | System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel), System.Drawing.Brushes.LimeGreen, new System.Drawing.PointF(10, 10));

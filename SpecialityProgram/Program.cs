@@ -1,4 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using SpecialityWebService;
 using SpecialityWebService.Network;
 using System.Net;
 using static SpecialityWebService.Network.Parser;
@@ -10,16 +11,15 @@ namespace SpecialityProgram
         public static void Main(string[] args)
         {
             TestLexer();
+
+            TestNetwork();
+
             //while (true)
                 //GetWMS().Wait();
         }
 
         public static void TestLexer()
         {
-
-            double test = double.PositiveInfinity * 0; 
-            double test2 = -double.PositiveInfinity;
-
             var testcases = new List<Tuple<string, double>>()
             {
                 new Tuple<string, double>("0", 0),
@@ -54,6 +54,8 @@ namespace SpecialityProgram
                     double computed = Convert.ToDouble(Parser.ExecuteExpression(testcase.Item1, ref environment).Value);
                     bool match = double.IsFinite(computed) ? Math.Abs(computed - testcase.Item2) < 0.00000001 : double.IsPositiveInfinity(computed) && double.IsPositiveInfinity(testcase.Item2) || double.IsNegativeInfinity(computed) && double.IsNegativeInfinity(testcase.Item2);
                     System.Diagnostics.Debug.WriteLine($"Test: {testcase.Item1}, expected: {testcase.Item2}, result: {(match ? "Matched!" : "No match, got: " + Lexer.GetTokenExpression(testcase.Item1))} = {computed}");
+                    if (!match)
+                        return;
                 }
                 catch (Exception ex)
                 {
@@ -62,6 +64,11 @@ namespace SpecialityProgram
             }
 
             //Parser.ExecuteExpression()
+        }
+
+        public static void TestNetwork()
+        {
+            Map map = new Map(string token, Dataset dataset, int minresolution)
         }
 
         public static async Task GetWMS()

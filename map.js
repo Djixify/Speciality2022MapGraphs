@@ -1,6 +1,10 @@
 //https://localhost:44342
 //http://localhost:8082
-var server = "http://localhost:8082"; 
+var servers = 
+    ["http://80.210.64.251:8082",
+     "http://localhost:8082",
+     "https://localhost:44342"]
+var server = servers[0]; 
 
 var token = "024b9d34348dd56d170f634e067274c6";
 var datasets = ["vejmanhastigheder", "geodanmark60"];
@@ -21,14 +25,15 @@ $(document).ready(async function(){
     var offsetY = 0;
     var dragging = false;
 
-    $('#server').attr("placeholder", server);
+    //$('#server').attr("placeholder", server);
 
     console.log(server + "/Map/startsession/token=" + token + ";dataset=" + dataset + ";width=" + width + ",height=" + height);
-    moveMap(0,0);
     
     $('#map').css('width', width);
     $('#map').css('height', height);
     $('#map').css('background-size', width + "px " + height + "px");
+    
+    moveMap(0,0);
 
     $('#map').mousedown(function(e) {
        console.log("Started dragging");
@@ -69,6 +74,25 @@ function updateserver() {
         }).catch(_ =>  
         {
             console.log("Failed to connect to new server: " + tmpserver);
+        }).finally(_ => 
+        {
+            $('#map').css('background-image', 'url(\"' + server + '/Map?t=' + (new Date().getTime()) + '\")');
+            $('#map').css('background-position-x', 0);
+            $('#map').css('background-position-y', 0);
+        });
+}
+
+function updateserver2() {
+	var tmpserver = $('#server').val();
+    tmpserver = parseInt(tmpserver);
+    tmpserver = servers[tmpserver];
+    fetch(tmpserver + "/Map/startsession/token=" + token + ";dataset=" + dataset + ";width=" + width + ",height=" + height, postrequestsettings).then(img =>
+        {
+            $('#statuslabel').text("Status: Successfully connected to new server: " + tmpserver);
+            server = tmpserver;
+        }).catch(_ =>  
+        {
+            $('#statuslabel').text("Status: Failed to connect to new server: " + tmpserver);
         }).finally(_ => 
         {
             $('#map').css('background-image', 'url(\"' + server + '/Map?t=' + (new Date().getTime()) + '\")');
@@ -129,6 +153,7 @@ function moveMap(moveX, moveY) {
     fetch(server + "/Map/move=" + moveX.toString() + "," + moveY.toString(), putrequestsettings)
         .then(result => 
         {
+            $('#statuslabel').text("Status: Successfully connected to new server: " + server);
             console.log("updated image");
             $('#map').css('background-image', 'url(\"' + server + '/Map?t=' + new Date().getTime() + '\")');
             $('#map').css('background-position-x', 0);

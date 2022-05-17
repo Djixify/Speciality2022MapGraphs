@@ -55,7 +55,7 @@ namespace SpecialityWebService.Network
                             v2 = v;
                             if (!isFirstPoint2)
                             {
-                                List<KeyValuePair<string, double>> weights = WeightCalculator.ComputeWeight(orderedVertices.Select(v => v.Item2.Location), path, weightformulas);
+                                List<KeyValuePair<string, double>> weights = WeightCalculator.ComputeWeight(orderedVertices.Select(v => v.Item2.Location), path, weightformulas, path.ColumnValues);
                                 //Forwards: 01, Backwards: 10, Both: 11, hence checks both forwards and both below
                                 if ((directionconvert[path.ColumnValues[directioncolumn]] & Direction.Forward) == Direction.Forward)
                                 {

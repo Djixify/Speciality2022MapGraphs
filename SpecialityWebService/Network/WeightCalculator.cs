@@ -10,7 +10,7 @@ namespace SpecialityWebService.Network
 {
     public class WeightCalculator
     {
-        public static List<KeyValuePair<string, double>> ComputeWeight(IEnumerable<Point> edgepoints, Path path, List<string> formulas)
+        public static List<KeyValuePair<string, double>> ComputeWeight(IEnumerable<Point> edgepoints, Path path, List<string> formulas, Dictionary<string, string> environmentvariables)
         {
             if (edgepoints.Count() < 2)
                 throw new ArgumentException("Edge is expected to have 2 or more points as part of its rendered path");
@@ -143,6 +143,9 @@ namespace SpecialityWebService.Network
         {
             { "true", new Token(true) },
             { "false", new Token(false) },
+            { "infty", new Token(double.PositiveInfinity) },
+            { "infinite", new Token(double.PositiveInfinity) },
+            { "infinity", new Token(double.PositiveInfinity) },
             { "pi", new Token(Math.PI) }
         };
 
@@ -957,6 +960,15 @@ namespace SpecialityWebService.Network
 
     public class Parser
     {
+        public struct ColumnData
+        {
+            public string Value;
+            public ColumnData(string value, string defaultvalue = "0")
+            {
+                Value = string.IsNullOrEmpty(value) ? defaultvalue : value;
+            }
+        }
+
         private Parser() { }
 
         private static Dictionary<Operator, Func<IComparable, IComparable, bool>> _logicComparisonMap = new Dictionary<Operator, Func<IComparable, IComparable, bool>>()
@@ -986,7 +998,7 @@ namespace SpecialityWebService.Network
             public ReturnValue(dynamic value, Type type)
             {
                 this.Type = type;
-                this.Value = value;
+                this.Value = type == typeof(double) && double.IsNaN(value) ? 0.0 : value;
             }
         }
 
@@ -1001,9 +1013,9 @@ namespace SpecialityWebService.Network
                 throw new RuntimeException("Descriped type did not match the value", token);
         }
 
-        public static ReturnValue ExecuteExpression(string input) => ExecuteExpression(Lexer.GetTokenExpression(input));
+        public static ReturnValue ExecuteExpression(string input, ref Dictionary<string, ColumnData> environment) => ExecuteExpression(Lexer.GetTokenExpression(input), ref environment);
 
-        public static ReturnValue ExecuteExpression(Token token)
+        public static ReturnValue ExecuteExpression(Token token, ref Dictionary<string, ColumnData> environment)
         {
             switch (token.Type)
             {
@@ -1016,9 +1028,29 @@ namespace SpecialityWebService.Network
                             return CastPrimitive<long>(token);
                         case Primitive.Float:
                             return CastPrimitive<double>(token);
-                        case Primitive.String:
                         case Primitive.Variable:
-                            //Placeholder
+                            string value = environment[token.Value].Value;
+                            if (bool.TryParse(value, out bool res1))
+                            {
+                                token.Value = res1;
+                                return CastPrimitive<bool>(token);
+                            }
+                            else if (long.TryParse(value, out long res2))
+                            {
+                                token.Value = res2;
+                                return CastPrimitive<long>(token);
+                            }
+                            else if (double.TryParse(value, out double res3))
+                            {
+                                token.Value = res3;
+                                return CastPrimitive<double>(token);
+                            }
+                            else
+                            {
+                                token.Value = value;
+                                return CastPrimitive<string>(token);
+                            }
+                        case Primitive.String:
                             return CastPrimitive<string>(token);
                     }
                     break;
@@ -1031,8 +1063,28 @@ namespace SpecialityWebService.Network
                         case Operator.LogicLessThanOrEqual:
                         case Operator.LogicGreaterThan:
                         case Operator.LogicGreaterThanOrEqual:
-                            ReturnValue left1 = ExecuteExpression(token.Tokens[0]);
-                            ReturnValue right1 = ExecuteExpression(token.Tokens[1]);
+                            ReturnValue left1 = ExecuteExpression(token.Tokens[0], ref environment);
+                            ReturnValue right1 = ExecuteExpression(token.Tokens[1], ref environment);
+                            if (left1.Type == typeof(double) || right1.Type == typeof(double))
+                            {
+                                left1 = new ReturnValue(Convert.ToDouble(left1.Value), typeof(double));
+                                right1 = new ReturnValue(Convert.ToDouble(right1.Value), typeof(double));
+                            }
+                            else if (left1.Type == typeof(long) || right1.Type == typeof(long))
+                            {
+                                left1 = new ReturnValue(Convert.ToInt64(left1.Value), typeof(long));
+                                right1 = new ReturnValue(Convert.ToInt64(right1.Value), typeof(long));
+                            }
+                            else if (left1.Type == typeof(bool) || right1.Type == typeof(bool))
+                            {
+                                left1 = new ReturnValue(Convert.ToBoolean(left1.Value), typeof(bool));
+                                right1 = new ReturnValue(Convert.ToBoolean(right1.Value), typeof(bool));
+                            }
+                            else
+                            {
+                                left1 = new ReturnValue(Convert.ToString(left1.Value), typeof(string));
+                                right1 = new ReturnValue(Convert.ToString(right1.Value), typeof(string));
+                            }
                             if (left1.Value is IComparable l1 && right1.Value is IComparable r1)
                             {
                                 try { return new ReturnValue(_logicComparisonMap[token.Operation](l1, r1), typeof(bool)); }
@@ -1043,16 +1095,16 @@ namespace SpecialityWebService.Network
                             else
                                 throw new RuntimeException("Left hand side of expression is not compariable", token);
                         case Operator.LogicNegate:
-                            ReturnValue left2 = ExecuteExpression(token.Tokens[0]);
+                            ReturnValue left2 = ExecuteExpression(token.Tokens[0], ref environment);
                             if (left2.Type == typeof(bool))
                                 return new ReturnValue(!(bool)left2.Value, typeof(bool));
                             else
                                 throw new RuntimeException("Expression was not a boolean", token);
                         case Operator.LogicAnd:
-                            ReturnValue left3 = ExecuteExpression(token.Tokens[0]);
+                            ReturnValue left3 = ExecuteExpression(token.Tokens[0], ref environment);
                             if (left3.Type == typeof(bool) && (bool)left3.Value == true)
                             {
-                                ReturnValue right3 = ExecuteExpression(token.Tokens[1]);
+                                ReturnValue right3 = ExecuteExpression(token.Tokens[1], ref environment);
                                 if (right3.Type == typeof(bool))
                                     return new ReturnValue((bool)right3.Value, typeof(bool));
                                 else
@@ -1063,10 +1115,10 @@ namespace SpecialityWebService.Network
                             else
                                 throw new RuntimeException("Left expression was not a boolean", token);
                         case Operator.LogicOr:
-                            ReturnValue left4 = ExecuteExpression(token.Tokens[0]);
+                            ReturnValue left4 = ExecuteExpression(token.Tokens[0], ref environment);
                             if (left4.Type == typeof(bool) && (bool)left4.Value == false)
                             {
-                                ReturnValue right4 = ExecuteExpression(token.Tokens[1]);
+                                ReturnValue right4 = ExecuteExpression(token.Tokens[1], ref environment);
                                 if (right4.Type == typeof(bool))
                                     return new ReturnValue((bool)right4.Value, typeof(bool));
                                 else
@@ -1081,8 +1133,8 @@ namespace SpecialityWebService.Network
                         case Operator.ArithmeticMultiply:
                         case Operator.ArithmeticDivide:
                         case Operator.ArithmeticPower:
-                            ReturnValue left8 = ExecuteExpression(token.Tokens[0]);
-                            ReturnValue right8 = ExecuteExpression(token.Tokens[1]);
+                            ReturnValue left8 = ExecuteExpression(token.Tokens[0], ref environment);
+                            ReturnValue right8 = ExecuteExpression(token.Tokens[1], ref environment);
                             if ((left8.Type == typeof(double) || left8.Type == typeof(long) || left8.Type == typeof(bool)) 
                                && (right8.Type == typeof(double) || right8.Type == typeof(long) || right8.Type == typeof(bool)))
                             {
@@ -1094,7 +1146,7 @@ namespace SpecialityWebService.Network
                             else
                                 throw new RuntimeException("Left hand side of expression is not compatible with operation", token);
                         case Operator.ArithmeticSign:
-                            ReturnValue left9 = ExecuteExpression(token.Tokens[0]);
+                            ReturnValue left9 = ExecuteExpression(token.Tokens[0], ref environment);
                             if (left9.Type == typeof(double))
                             {
                                 try { return new ReturnValue(-(double)left9.Value, typeof(double)); }
@@ -1113,8 +1165,8 @@ namespace SpecialityWebService.Network
                             else
                                 throw new RuntimeException("Expression is not compatible with operation", token);
                         case Operator.ArithmeticModulus:
-                            ReturnValue left10 = ExecuteExpression(token.Tokens[0]);
-                            ReturnValue right10 = ExecuteExpression(token.Tokens[1]);
+                            ReturnValue left10 = ExecuteExpression(token.Tokens[0], ref environment);
+                            ReturnValue right10 = ExecuteExpression(token.Tokens[1], ref environment);
                             if (left10.Type == typeof(long) && right10.Type == typeof(long))
                             {
                                 try { return new ReturnValue((long)left10.Value % (long)right10.Value, typeof(long)); }
@@ -1127,7 +1179,7 @@ namespace SpecialityWebService.Network
                         case Operator.FunctionSquareRoot:
                             if (token.Tokens.Count == 1)
                             {
-                                ReturnValue sqt = ExecuteExpression(token.Tokens[0]);
+                                ReturnValue sqt = ExecuteExpression(token.Tokens[0], ref environment);
                                 try { return new ReturnValue(Math.Sqrt(sqt.Value), typeof(double)); }
                                 catch (Exception) { throw new RuntimeException("Incompatible attempted to be cast", token); }
                             }
@@ -1136,11 +1188,11 @@ namespace SpecialityWebService.Network
                         case Operator.FunctionPower:
                             if (token.Tokens.Count > 0 && token.Tokens.Count <= 2)
                             {
-                                ReturnValue root = ExecuteExpression(token.Tokens[0]);
+                                ReturnValue root = ExecuteExpression(token.Tokens[0], ref environment);
                                 double power = 2;
                                 if (token.Tokens.Count == 2)
                                 {
-                                    ReturnValue pow = ExecuteExpression(token.Tokens[1]);
+                                    ReturnValue pow = ExecuteExpression(token.Tokens[1], ref environment);
                                     if (pow.Type == typeof(double) || pow.Type == typeof(long))
                                         power = (double)pow.Value;
                                     else
@@ -1154,7 +1206,7 @@ namespace SpecialityWebService.Network
                         case Operator.FunctionFloor:
                             if (token.Tokens.Count == 1)
                             {
-                                ReturnValue floor = ExecuteExpression(token.Tokens[0]);
+                                ReturnValue floor = ExecuteExpression(token.Tokens[0], ref environment);
                                 try { return new ReturnValue((double)Math.Floor(floor.Value), typeof(double)); }
                                 catch (Exception) { throw new RuntimeException("Incompatible attempted to be cast", token); }
                             }
@@ -1163,7 +1215,7 @@ namespace SpecialityWebService.Network
                         case Operator.FunctionCeil:
                             if (token.Tokens.Count == 1)
                             {
-                                ReturnValue ceil = ExecuteExpression(token.Tokens[0]);
+                                ReturnValue ceil = ExecuteExpression(token.Tokens[0], ref environment);
                                 try { return new ReturnValue((double)Math.Ceiling(ceil.Value), typeof(double)); }
                                 catch (Exception) { throw new RuntimeException("Incompatible attempted to be cast", token); }
                             }
@@ -1172,7 +1224,7 @@ namespace SpecialityWebService.Network
                         case Operator.FunctionCosine:
                             if (token.Tokens.Count == 1)
                             {
-                                ReturnValue cos = ExecuteExpression(token.Tokens[0]);
+                                ReturnValue cos = ExecuteExpression(token.Tokens[0], ref environment);
                                 try { return new ReturnValue((double)Math.Cos(cos.Value), typeof(double)); }
                                 catch (Exception) { throw new RuntimeException("Incompatible attempted to be cast", token); }
                             }
@@ -1181,7 +1233,7 @@ namespace SpecialityWebService.Network
                         case Operator.FunctionSine:
                             if (token.Tokens.Count == 1)
                             {
-                                ReturnValue sin = ExecuteExpression(token.Tokens[0]);
+                                ReturnValue sin = ExecuteExpression(token.Tokens[0], ref environment);
                                 try { return new ReturnValue((double)Math.Sin(sin.Value), typeof(double)); }
                                 catch (Exception) { throw new RuntimeException("Incompatible attempted to be cast", token); }
                             }
@@ -1190,7 +1242,7 @@ namespace SpecialityWebService.Network
                         case Operator.FunctionTangent:
                             if (token.Tokens.Count == 1)
                             {
-                                ReturnValue tan = ExecuteExpression(token.Tokens[0]);
+                                ReturnValue tan = ExecuteExpression(token.Tokens[0], ref environment);
                                 try { return new ReturnValue((double)Math.Tan(tan.Value), typeof(double)); }
                                 catch (Exception) { throw new RuntimeException("Incompatible attempted to be cast", token); }
                             }
@@ -1199,7 +1251,7 @@ namespace SpecialityWebService.Network
                         case Operator.FunctionInverseCosine:
                             if (token.Tokens.Count == 1)
                             {
-                                ReturnValue invcos = ExecuteExpression(token.Tokens[0]);
+                                ReturnValue invcos = ExecuteExpression(token.Tokens[0], ref environment);
                                 try { return new ReturnValue((double)Math.Acos(invcos.Value), typeof(double)); }
                                 catch (Exception) { throw new RuntimeException("Incompatible attempted to be cast", token); }
                             }
@@ -1208,7 +1260,7 @@ namespace SpecialityWebService.Network
                         case Operator.FunctionInverseSine:
                             if (token.Tokens.Count == 1)
                             {
-                                ReturnValue invsin = ExecuteExpression(token.Tokens[0]);
+                                ReturnValue invsin = ExecuteExpression(token.Tokens[0], ref environment);
                                 try { return new ReturnValue((double)Math.Asin(invsin.Value), typeof(double)); }
                                 catch (Exception) { throw new RuntimeException("Incompatible attempted to be cast", token); }
                             }
@@ -1217,7 +1269,7 @@ namespace SpecialityWebService.Network
                         case Operator.FunctionInverseTangent:
                             if (token.Tokens.Count == 1)
                             {
-                                ReturnValue invtan = ExecuteExpression(token.Tokens[0]);
+                                ReturnValue invtan = ExecuteExpression(token.Tokens[0], ref environment);
                                 try { return new ReturnValue((double)Math.Atan(invtan.Value), typeof(double)); }
                                 catch (Exception) { throw new RuntimeException("Incompatible attempted to be cast", token); }
                             }

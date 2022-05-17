@@ -1,4 +1,6 @@
-var server = "localhost:44342";
+//https://localhost:44342
+//http://localhost:8082
+var server = "http://localhost:8082"; 
 
 var token = "024b9d34348dd56d170f634e067274c6";
 var datasets = ["vejmanhastigheder", "geodanmark60"];
@@ -15,21 +17,21 @@ $(document).ready(async function(){
     var offsetY = 0;
     var dragging = false;
 
-    
+    $('#server').attr("placeholder", server);
 
-    console.log("https://" + server + "/Map/startsession/token=" + token + ";dataset=" + dataset + ";width=" + width + ",height=" + height)
-    fetch("https://" + server + "/Map/startsession/token=" + token + ";dataset=" + dataset + ";width=" + width + ",height=" + height, {method: "POST"});
-    moveMap(0,0)
+    console.log(server + "/Map/startsession/token=" + token + ";dataset=" + dataset + ";width=" + width + ",height=" + height);
+    fetch(server + "/Map/startsession/token=" + token + ";dataset=" + dataset + ";width=" + width + ",height=" + height, {method: "POST"});
+    moveMap(0,0);
     
     $('#map').css('width', width);
     $('#map').css('height', height);
     $('#map').css('background-size', width + "px " + height + "px");
 
     $('#map').mousedown(function(e) {
-       console.log("Started dragging")
-       var bounds = $("#map").get(0).getBoundingClientRect()
-       offsetX = e.clientX
-       offsetY = e.clientY
+       console.log("Started dragging");
+       var bounds = $("#map").get(0).getBoundingClientRect();
+       offsetX = e.clientX;
+       offsetY = e.clientY;
        startX = e.clientX;
        startY = e.clientY;
        console.log(e.clientX + ' ' + e.clientY + ' ' + e.pageX + ' ' + e.pageY)
@@ -45,29 +47,38 @@ $(document).ready(async function(){
     });
   
     $('#map').mouseup(function(e) {
-        console.log("Stopped dragging")
+        console.log("Stopped dragging");
         moveMap(-(e.clientX - startX), (e.clientY - startY));
         dragging = false;
     });
 });
 
+function updateserver() {
+	server = $('#server').val();
+    $('#server').attr("placeholder", server);
+	console.log("updated image " + server); 
+	$('#map').css('background-image', 'url(\"' + server + '/Map?t=' + (new Date().getTime()) + '\")');
+	$('#map').css('background-position-x', 0);
+	$('#map').css('background-position-y', 0);
+}
+
 function zoominclicked() {
-    fetch("https://" + server + "/Map/zoom=2.0", {method: "POST"})
+    fetch(server + "/Map/zoom=2.0", {method: "POST"})
         .finally(_ => 
         {
             console.log("updated image"); 
-            $('#map').css('background-image', 'url(\"https://' + server + '/Map?t=' + (new Date().getTime()) + '\")');
+            $('#map').css('background-image', 'url(\"' + server + '/Map?t=' + (new Date().getTime()) + '\")');
             $('#map').css('background-position-x', 0);
             $('#map').css('background-position-y', 0);
         })
 }
 
 function zoomoutclicked() {
-    fetch("https://" + server + "/Map/zoom=0.5", {method: "POST"})
+    fetch(server + "/Map/zoom=0.5", {method: "POST"})
         .finally(_ => 
         {
             console.log("updated image"); 
-            $('#map').css('background-image', 'url(\"https://' + server + '/Map?t=' + (new Date().getTime()) + '\")');
+            $('#map').css('background-image', 'url(\"' + server + '/Map?t=' + (new Date().getTime()) + '\")');
             $('#map').css('background-position-x', 0);
             $('#map').css('background-position-y', 0);
         })
@@ -75,32 +86,36 @@ function zoomoutclicked() {
 
 function toggledebug() {
     debug = !debug
-    fetch("https://" + server + "/Map/debug=" + debug.toString(), {method: "POST"})
-        .finally(_ => {console.log("updated image"); 
-        $('#map').css('background-image', 'url(\"https://' + server + '/Map?t=' + (new Date().getTime()) + '\")');
-        $('#map').css('background-position-x', 0);
-        $('#map').css('background-position-y', 0);
-	})
+    fetch(server + "/Map/debug=" + debug.toString(), {method: "POST"})
+        .finally(_ => 
+		{
+			console.log("updated image"); 
+			$('#map').css('background-image', 'url(\"' + server + '/Map?t=' + (new Date().getTime()) + '\")');
+			$('#map').css('background-position-x', 0);
+			$('#map').css('background-position-y', 0);
+		})
 }
 
 function changedataset(){
 	var x = document.getElementById("datasetselector").value;
 	console.log("changed dataset " + x);
 	dataset = datasets[parseInt(x)]
-	fetch("https://" + server + "/Map/changedataset=" + dataset, {method: "POST"})
-        .finally(_ => {console.log("updated image"); 
-        $('#map').css('background-image', 'url(\"https://' + server + '/Map?t=' + (new Date().getTime()) + '\")');
-        $('#map').css('background-position-x', 0);
-        $('#map').css('background-position-y', 0);
-	})
+	fetch(server + "/Map/changedataset=" + dataset, {method: "POST"})
+        .finally(_ => 
+		{
+			console.log("updated image"); 
+			$('#map').css('background-image', 'url(\"' + server + '/Map?t=' + (new Date().getTime()) + '\")');
+			$('#map').css('background-position-x', 0);
+			$('#map').css('background-position-y', 0);
+		})
 }
 
 function moveMap(moveX, moveY) {
-    fetch("https://" + server + "/Map/move=" + moveX.toString() + "," + moveY.toString(), {method: "POST"})
+    fetch(server + "/Map/move=" + moveX.toString() + "," + moveY.toString(), {method: "POST"})
         .finally(_ => 
         {
             console.log("updated image"); 
-            $('#map').css('background-image', 'url(\"https://' + server + '/Map?t=' + new Date().getTime() + '\")');
+            $('#map').css('background-image', 'url(\"' + server + '/Map?t=' + new Date().getTime() + '\")');
             $('#map').css('background-position-x', 0);
             $('#map').css('background-position-y', 0);
         })

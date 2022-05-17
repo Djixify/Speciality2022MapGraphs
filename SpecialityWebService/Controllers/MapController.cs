@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,13 @@ namespace SpecialityWebService.Controllers
     {
         private static Dictionary<string, Map> maps = new Dictionary<string, Map>();
         private string IP => HttpContext.Connection.RemoteIpAddress.ToString() ?? HttpContext.Connection.LocalIpAddress.ToString();
+
+        private readonly ILogger<MapController> _logger;
+
+        public MapController(ILogger<MapController> logger)
+        {
+            _logger = logger;
+        }
 
         private bool TryConvertDataset(string input, out Map.Dataset ds)
         {
@@ -55,6 +63,7 @@ namespace SpecialityWebService.Controllers
                 Byte[] b = System.IO.File.ReadAllBytes(@".\Resources\Images\gandalf_nyhed.jpg");
                 return File(b, "image/jpeg");
             }
+            HttpContext.Response.StatusCode = 200;
             return File(maps[IP].RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, HttpContext), "image/jpg");
         }
 
@@ -147,7 +156,10 @@ namespace SpecialityWebService.Controllers
         public void Post(int x, int y)
         {
             if (maps.ContainsKey(IP))
-                maps[IP].Camera.MoveScreen(x,y);
+            {
+                HttpContext.Response.StatusCode = 200;
+                maps[IP].Camera.MoveScreen(x, y);
+            }
             else
                 NoMapInstanciatedStatus();
         }
@@ -156,7 +168,10 @@ namespace SpecialityWebService.Controllers
         public void Post(double zoom)
         {
             if (maps.ContainsKey(IP))
+            {
+                HttpContext.Response.StatusCode = 200;
                 maps[IP].Camera.ZoomView(zoom);
+            }
             else
                 NoMapInstanciatedStatus();
         }
@@ -165,7 +180,10 @@ namespace SpecialityWebService.Controllers
         public void Post(bool debug)
         {
             if (maps.ContainsKey(IP))
+            {
+                HttpContext.Response.StatusCode = 200;
                 maps[IP].Debug = debug;
+            }
             else
                 NoMapInstanciatedStatus();
         }
@@ -174,7 +192,10 @@ namespace SpecialityWebService.Controllers
         public void Post2(int width, int height)
         {
             if (maps.ContainsKey(IP))
+            {
+                HttpContext.Response.StatusCode = 200;
                 maps[IP].Camera.SetScreenSize(width, height);
+            }
             else
                 NoMapInstanciatedStatus();
         }

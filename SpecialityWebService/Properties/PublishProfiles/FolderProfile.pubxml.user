@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+https://go.microsoft.com/fwlink/?LinkID=208121.
+-->
+<Project>
+  <PropertyGroup>
+    <_PublishTargetUrl>C:\Webservices</_PublishTargetUrl>
+    <History>True|2022-05-17T09:29:09.5128198Z;True|2022-05-17T11:28:04.1283731+02:00;False|2022-05-17T11:26:07.0080281+02:00;</History>
+  </PropertyGroup>
+  <ItemGroup>
+    <File Include="index.html">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="map.js">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Resources/Images/34891.jpg">
+      <publishTime>11/05/2022 13:04:08</publishTime>
+    </File>
+    <File Include="Resources/Images/gandalf_nyhed.jpg">
+      <publishTime>11/05/2022 10:08:18</publishTime>
+    </File>
+    <File Include="Resources/Vectordata/dfvejedata.gfs">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Resources/Vectordata/dfvejedata.gml">
+      <publishTime>12/05/2022 11:43:30</publishTime>
+    </File>
+    <File Include="Resources/Vectordata/vmvejedata.gfs">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Resources/Vectordata/vmvejedata.gml">
+      <publishTime>12/05/2022 11:43:30</publishTime>
+    </File>
+    <File Include="wwwroot/index.html">
+      <publishTime>05/16/2022 09:41:38</publishTime>
+    </File>
+    <File Include="wwwroot/map.js">
+      <publishTime>05/16/2022 09:43:07</publishTime>
+    </File>
+  </ItemGroup>
+</Project>

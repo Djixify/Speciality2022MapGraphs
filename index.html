@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <style>
@@ -14,12 +15,14 @@
 <body>
   <div>
       <h1>Map network generator</h1>
+	  <input type="text" id="server">
+	  <button onclick="updateserver()">Update</button>
       <div>
         <img id="map"/>
       </div>
-      <button onclick="zoominclicked()">zoom in</button>
-      <button onclick="zoomoutclicked()">zoom out</button>
-      <button onclick="toggledebug()">debug</button>
+      <button onclick="zoominclicked()">Zoom in</button>
+      <button onclick="zoomoutclicked()">Zoom out</button>
+      <button onclick="toggledebug()">Debug</button>
 	  <select id="datasetselector" onchange="changedataset()">
 		<option value="0">Vejhastigheder small</option>
 		<option value="1">Geodanmark60 small</option>

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
+using static SpecialityWebService.Generation.Parser;
 using static SpecialityWebService.MathObjects;
 
 namespace SpecialityWebService
@@ -38,7 +39,7 @@ namespace SpecialityWebService
 
         public int Id { get; set; } = -1;
         public string Fid { get; set; } = null;
-        public Dictionary<string, string> ColumnValues { get; set; } = null;
+        public Dictionary<string, ColumnData> ColumnValues { get; set; } = null;
 
         public static List<Path> FromXML(int id, XElement featureMember, List<string> columns2extract)
         {
@@ -53,7 +54,14 @@ namespace SpecialityWebService
             XElement data = featureMember.Elements().ElementAt(0);
             _fid = data.FirstAttribute.Value;
             bool hadBoundedBy = false;
-            Dictionary<string, string> columnvalues = new Dictionary<string, string>();
+            Dictionary<string, ColumnData> columnvalues = new Dictionary<string, ColumnData>();
+
+            foreach (string column in columns2extract)
+            {
+                if (!columnvalues.ContainsKey(column))
+                    columnvalues[column] = new ColumnData(null);
+            }
+
             foreach (XElement column in data.Elements())
             {
                 if (column.Name.LocalName == "boundedBy")
@@ -120,14 +128,8 @@ namespace SpecialityWebService
                 }
                 else if (columns2extract.Contains(column.Name.LocalName))
                 {
-                    columnvalues.Add(column.Name.LocalName, column.Value);
+                    columnvalues[column.Name.LocalName] = new ColumnData(column.Value);
                 }
-            }
-
-            foreach (string column in columns2extract)
-            {
-                if (!columnvalues.ContainsKey(column))
-                    columnvalues[column] = null;
             }
 
             List<Path> paths = new List<Path>();

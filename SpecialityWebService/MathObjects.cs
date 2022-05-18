@@ -14,6 +14,9 @@ namespace SpecialityWebService
             public static Point operator +(Point me, Point other) => new Point(me.X + other.X, me.Y + other.Y);
             public static Point operator -(Point me, Point other) => new Point(me.X - other.X, me.Y - other.Y);
 
+            public static bool operator ==(Point left, Point right) => left.X == right.X && left.Y == right.Y;
+            public static bool operator !=(Point left, Point right) => left.X != right.X || left.Y != right.Y;
+
             public double Distance(Point other) {
                 double distx = X - other.X;
                 double disty = Y - other.Y;

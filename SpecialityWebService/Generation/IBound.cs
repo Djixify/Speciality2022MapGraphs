@@ -4,11 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using static SpecialityWebService.MathObjects;
 
-namespace SpecialityWebService.Network
+namespace SpecialityWebService.Generation
 {
-    public interface ISegment : IBound
+    public interface IBound
     {
-        Point P1 { get; set; }
-        Point P2 { get; set; }
+        public Rectangle BoundaryBox { get; set; }
     }
 }

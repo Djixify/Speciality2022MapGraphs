@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using SpecialityWebService.Generation;
 using SpecialityWebService.Services;
 using System;
 using System.Collections.Generic;
@@ -42,9 +43,12 @@ namespace SpecialityWebService
                 }
             }
         }
+
         public bool Debug { get; set; } = true;
         public IGMLReader GML { get; set; } = null;
         public Camera Camera { get; set; }
+
+        public List<Network> Networks { get; set; } = new List<Network>();
 
         public Map(string token, Dataset dataset, int minresolution)
         {

@@ -1,10 +1,10 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using SpecialityWebService;
-using SpecialityWebService.Network;
+using SpecialityWebService.Generation;
 using System.Net;
 using static SpecialityWebService.Map;
 using static SpecialityWebService.MathObjects;
-using static SpecialityWebService.Network.Parser;
+using static SpecialityWebService.Generation.Parser;
 
 namespace SpecialityProgram
 {
@@ -70,14 +70,14 @@ namespace SpecialityProgram
 
         public static void TestNetwork()
         {
-            var rtree = new SpecialityWebService.Network.Rtree<Vertex>();
+            var rtree = new SpecialityWebService.Generation.Rtree<Vertex>();
             Vertex v1 = new Vertex(0, new Point(0, 0), new List<int>(), 0, null);
             Vertex v2 = new Vertex(1, new Point(1, 1), new List<int>(), 0, null);
             Vertex v3 = new Vertex(2, new Point(2, 2), new List<int>(), 0, null);
             rtree.Insert(v1);
             rtree.Insert(v2);
             rtree.Insert(v3);
-            List<IQueryItem<Vertex>> items = rtree.Query(new Rectangle(1, 1, 0.5));
+            List<Vertex> items = rtree.Query(new Rectangle(1, 1, 0.5));
 
             Map map = new Map("024b9d34348dd56d170f634e067274c6", Dataset.VejmanHastigheder, 1280, 960);
             INetworkGenerator qgis = new QGISReferenceAlgorithm();
@@ -103,7 +103,8 @@ namespace SpecialityProgram
             foreach (SpecialityWebService.Path path in paths)
                 path.UpdateBoundaryBox();
 
-            Network network = qgis.Generate(map.GML.GetPathEnumerator(Rectangle.Infinite()), 0.5, null, null, new List<string>() { "TILKM" });
+
+            //Network network = qgis.Generate(map.GML.GetPathEnumerator(Rectangle.Infinite()), 0.5, null, null, new List<string>() { "TILKM" });
 
         }
 

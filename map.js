@@ -3,8 +3,10 @@
 var servers = 
     ["https://80.210.64.251:8082",
      "https://localhost:8082",
+     "http://80.210.64.251:8082",
+     "http://localhost:8082",
      "https://localhost:44342"]
-var server = servers[0]; 
+var server = servers[4]; 
 
 var token = "024b9d34348dd56d170f634e067274c6";
 var datasets = ["vejmanhastigheder", "geodanmark60"];
@@ -29,9 +31,7 @@ $(document).ready(async function(){
 
     console.log(server + "/Map/startsession/token=" + token + ";dataset=" + dataset + ";width=" + width + ",height=" + height);
     
-    $('#map').css('width', width);
-    $('#map').css('height', height);
-    $('#map').css('background-size', width + "px " + height + "px");
+    updateserver();
     
     moveMap(0,0);
 
@@ -71,6 +71,13 @@ function updateserver() {
             server = tmpserver;
             $('#server').val('');
             $('#server').attr("placeholder", server);
+            fetch(server + "/Map/mapsize", getrequestsettings).then(response => 
+                {
+                    var widthheight = response.text().split(",")
+                    $('#map').css('width', widthheight[0]);
+                    $('#map').css('height', widthheight[1]);
+                    $('#map').css('background-size', widthheight[0] + "px " + widthheight[1] + "px");
+                });
         }).catch(_ =>  
         {
             console.log("Failed to connect to new server: " + tmpserver);

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace SpecialityWebService.Network
+namespace SpecialityWebService.Generation
 {
     public interface IQueryItem<T> : IFileItem<T>, IBound, ISpatialData
     {

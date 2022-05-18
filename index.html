@@ -43,7 +43,7 @@
       text-align: center;
     }
 
-    button{
+    button {
       background-color: #555;
       border-color: gray;
       color: white;
@@ -59,7 +59,7 @@
       background-color: black;
     }
 
-    input{
+    input, select {
       padding: 5px;
     }
 
@@ -98,7 +98,9 @@
     <select id="server" onchange="updateserver2()">
 		  <option value="0">https://80.210.64.251:8082</option>
       <option value="1">https://localhost:8082</option>
-      <option value="2">https://localhost:44342</option>
+		  <option value="2">http://80.210.64.251:8082</option>
+      <option value="3">http://localhost:8082</option>
+      <option value="4">https://localhost:44342</option>
 	  </select>
     <p id="statuslabel">Status: </p>
     <div class="container">

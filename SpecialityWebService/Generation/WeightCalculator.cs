@@ -4,13 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static SpecialityWebService.MathObjects;
-using static SpecialityWebService.Network.Lexer;
+using static SpecialityWebService.Generation.Lexer;
+using System.Globalization;
+using static SpecialityWebService.Generation.Parser;
 
-namespace SpecialityWebService.Network
+namespace SpecialityWebService.Generation
 {
     public class WeightCalculator
     {
-        public static List<KeyValuePair<string, double>> ComputeWeight(IEnumerable<Point> edgepoints, Path path, List<string> formulas, Dictionary<string, string> environmentvariables)
+        public static List<KeyValuePair<string, double>> ComputeWeight(IEnumerable<Point> edgepoints, Path path, List<KeyValuePair<string, string>> formulas, Dictionary<string, ColumnData> environmentvariables)
         {
             if (edgepoints.Count() < 2)
                 throw new ArgumentException("Edge is expected to have 2 or more points as part of its rendered path");
@@ -26,9 +28,9 @@ namespace SpecialityWebService.Network
                 prevp = p;
             }
 
-            //TODO: Get parser from discord bot
+            path.ColumnValues.Add("distance", new ColumnData(distance.ToString(CultureInfo.InvariantCulture), "infty"));
 
-            return formulas.Select(formula => new KeyValuePair<string, double>(formula, distance)).ToList();
+            return formulas.Select(formula => new KeyValuePair<string, double>(formula.Key, Convert.ToDouble(Parser.ExecuteExpression(formula.Value, ref environmentvariables).Value))).ToList();
         }
     }
 
@@ -106,6 +108,16 @@ namespace SpecialityWebService.Network
             FunctionInverseCosine = 207,
             FunctionInverseSine = 208,
             FunctionInverseTangent = 209
+        }
+
+        public static List<Token> ExtractPrimitiveTokens(Primitive primitive, string text) => ExtractPrimitiveTokens(primitive, Lexer.GetTokenExpression(text));
+
+        public static List<Token> ExtractPrimitiveTokens(Primitive primitive, Token token)
+        {
+            if (token.Type == Token.Kind.Primitive)
+                return token.Primitive == primitive ? new List<Token>() { token } : new List<Token>();
+            else
+                return token.Tokens.Select(t => ExtractPrimitiveTokens(primitive, t)).SelectMany(i => i).ToList();
         }
 
         private static Dictionary<Operator, string> _operatorMap = new Dictionary<Operator, string>() {
@@ -963,7 +975,7 @@ namespace SpecialityWebService.Network
         public struct ColumnData
         {
             public string Value;
-            public ColumnData(string value, string defaultvalue = "0")
+            public ColumnData(string value, string defaultvalue = "NULL")
             {
                 Value = string.IsNullOrEmpty(value) ? defaultvalue : value;
             }

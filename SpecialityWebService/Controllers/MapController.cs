@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
-using SpecialityWebService.Network;
+using SpecialityWebService.Generation;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -52,11 +52,11 @@ namespace SpecialityWebService.Controllers
         private void NoMapInstanciatedStatus()
         {
             HttpContext.Response.StatusCode = 400;
-            HttpContext.Response.Headers.Add(new KeyValuePair<string, StringValues>("response", new StringValues("No map instantiated, please call post on 'generate/startsession/token={wmstoken};dataset={dataset};minres={minresolution}' first")));
+            HttpContext.Response.Headers.Add(new KeyValuePair<string, StringValues>("response", new StringValues("No map instantiated, please call post on 'startsession/token={wmstoken};dataset={dataset};minres={minresolution}' first")));
         }
 
         [HttpGet]
-        public FileContentResult Get()
+        public FileContentResult GetMap()
         {
             if (!maps.ContainsKey(IP))
             {
@@ -71,7 +71,7 @@ namespace SpecialityWebService.Controllers
 
         // GET: /Map
         [HttpGet("token={wmstoken};dataset={dataset};bbox={minx},{miny},{maxx},{maxy}")]
-        public FileContentResult Get(string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", double minx = 586835.1, double miny = 6135927.2, double maxx = 591812.3, double maxy = 6139738.0)
+        public FileContentResult GetMapBoundarybox(string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", double minx = 586835.1, double miny = 6135927.2, double maxx = 591812.3, double maxy = 6139738.0)
         {
             Map.Dataset ds;
             TryConvertDataset(dataset, out ds);
@@ -81,24 +81,17 @@ namespace SpecialityWebService.Controllers
             return File(map.RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, HttpContext), "image/jpg");
         }
 
-        [HttpGet("getvalue={value}")]
-        public ContentResult Get(string value)
+        [HttpGet("mapsize")]
+        public StringContent GetMapScreenSize()
         {
             if (!maps.ContainsKey(IP))
             {
                 NoMapInstanciatedStatus();
-                return Content("");
+                return new StringContent("");
             }
 
-            switch(value)
-            {
-                case "screensize":
-                    Rectangle screenview = maps[IP].Camera.ScreenViewPort;
-                    return Content((int)screenview.Width + "," + (int)screenview.Height);
-                default:
-                    HttpContext.Response.StatusCode = 400;
-                    return Content("");
-            }
+            Rectangle screenview = maps[IP].Camera.ScreenViewPort;
+            return new StringContent(((int)screenview.Width + "," + (int)screenview.Height));
         }
 
         [HttpPost("startsession/token={wmstoken};dataset={dataset};minres={minresolution};bbox={minx},{miny},{maxx},{maxy}")]
@@ -190,25 +183,36 @@ namespace SpecialityWebService.Controllers
                 NoMapInstanciatedStatus();
         }
 
-        [HttpPost("generatenetwork/weights={weight},tolerance={tolerance}, directioncolumn={directioncolumn},forwardsval={forwardsval},backwardsval={backwardsval}")]
-        public async void Post(string weight, double tolerance, string directioncolumn, string forwardsval, string backwardsval)
+        [HttpPost("generatenetwork/{type}/name={name};endpointtolerance={endpointtolerance};midpointtolerance={midpointtolerance};directioncolumn={directioncolumn},forwardsval={forwardsval},backwardsval={backwardsval}")]
+        public async void Post(string type, string name, double endpointtolerance, double midpointtolerance, string directioncolumn, string forwardsval, string backwardsval)
         {
             if (maps.ContainsKey(IP))
             {
-                HttpContext.Response.StatusCode = 200;
-                ValueTask<ReadResult> task = HttpContext.Request.BodyReader.ReadAsync();
-                ReadResult result = await task;
-                if (result.IsCompleted)
+                switch(type)
                 {
-                    string resultstr = result.ToString();
-                    INetworkGenerator qgis = new QGISReferenceAlgorithm();
-                    
-                    Network.Network network = qgis.Generate(maps[IP].GML.GetPathEnumerator(Rectangle.Infinite()), tolerance, directioncolumn, new Dictionary<string, Direction>(new List<KeyValuePair<string, Direction>>() { new KeyValuePair<string, Direction>(forwardsval, Direction.Forward), new KeyValuePair<string, Direction>(backwardsval, Direction.Backward) }), new List<string>() { "KMT" });
+                    case "QGIS":
+                        HttpContext.Response.StatusCode = 200;
+                        INetworkGenerator qgis = new QGISReferenceAlgorithm();
+                        Network network = new Network(name, qgis, new Rtree<int>());
+                        network.EndPointTolerance = endpointtolerance;
+                        network.MidPointTolerance = midpointtolerance;
+                        network.DirectionColumn = directioncolumn;
+                        network.DirectionForwardsValue = forwardsval;
+                        network.DirectionBackwardsValue = backwardsval;
+                        network.Weights = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("euclidean distance", "distance") };
+                        network.ExtractionColumns = network.Weights.Select(w => Lexer.ExtractPrimitiveTokens(Lexer.Primitive.Variable, w.Value)).SelectMany(i => i).Select(token => (string)token.Value).ToList();
+
+                        network.Generate(maps[IP]);
+                        break;
+                    case "Own":
+
+                        break;
                 }
             }
             else
                 NoMapInstanciatedStatus();
         }
+
 
         [HttpPost("setscreensize={width},{height}")]
         public void Post2(int width, int height)

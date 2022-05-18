@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace SpecialityWebService.Network
+namespace SpecialityWebService.Generation
 {
     public interface IFileItem<T>
     {

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using static SpecialityWebService.MathObjects;
 
-namespace SpecialityWebService.Network
+namespace SpecialityWebService.Generation
 {
 
     public class Edge : IFileItem<Edge>, ISegment
@@ -29,7 +29,7 @@ namespace SpecialityWebService.Network
 
         public Dictionary<string, double> Weights;
 
-        public Edge(int index, Vertex v1, Vertex v2, Direction direction, IEnumerable<KeyValuePair<string, double>> weights, int pathid, string fid, IEnumerable<Point> renderpoints = null)
+        public Edge(int index, Vertex v1, Vertex v2, Direction direction, IEnumerable<KeyValuePair<string, double>> weights, int pathid, string fid, IEnumerable<Point> renderpoints)
         {
             Index = index;
             V1 = v1.Index;
@@ -40,7 +40,7 @@ namespace SpecialityWebService.Network
             PathId = pathid;
             Fid = fid;
             Weights = new Dictionary<string, double>(weights);
-            if (renderpoints != null)
+            if (renderpoints != null && renderpoints.Count() >= 2 && (direction == Direction.Forward ? renderpoints.First() == P1 && renderpoints.Last() == P2 : renderpoints.Last() == P1 && renderpoints.First() == P2))
                 RenderPoints = new List<Point>(renderpoints);
         }
 

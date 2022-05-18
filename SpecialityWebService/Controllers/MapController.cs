@@ -203,7 +203,7 @@ namespace SpecialityWebService.Controllers
                     string resultstr = result.ToString();
                     INetworkGenerator qgis = new QGISReferenceAlgorithm();
                     
-                    Network.Network network = qgis.Generate(maps[IP].GML.GetPathEnumerator(Rectangle.Infinite()), tolerance, directioncolumn, new Dictionary<string, Direction>(new List<KeyValuePair<string, Direction>>() { new KeyValuePair<string, Direction>(forwardsval, Direction.Forward), new KeyValuePair<string, Direction>(backwardsval, Direction.Backward) }), );
+                    Network.Network network = qgis.Generate(maps[IP].GML.GetPathEnumerator(Rectangle.Infinite()), tolerance, directioncolumn, new Dictionary<string, Direction>(new List<KeyValuePair<string, Direction>>() { new KeyValuePair<string, Direction>(forwardsval, Direction.Forward), new KeyValuePair<string, Direction>(backwardsval, Direction.Backward) }), new List<string>() { "KMT" });
                 }
             }
             else

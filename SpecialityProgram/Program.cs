@@ -99,8 +99,10 @@ namespace SpecialityProgram
                     })
                 }
             };
+
             foreach (SpecialityWebService.Path path in paths)
                 path.UpdateBoundaryBox();
+
             Network network = qgis.Generate(map.GML.GetPathEnumerator(Rectangle.Infinite()), 0.5, null, null, new List<string>() { "TILKM" });
 
         }

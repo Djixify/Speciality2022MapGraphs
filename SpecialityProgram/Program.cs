@@ -86,16 +86,16 @@ namespace SpecialityProgram
                     Points = new List<Point>() { new Point(0,0), new Point(1,1), new Point(2,2) },
                     Id = 0,
                     Fid = null,
-                    ColumnValues = new Dictionary<string, string>(new List<KeyValuePair<string, string>>() {
-                        new KeyValuePair<string, string>("TILKM", "30")
+                    ColumnValues = new Dictionary<string, ColumnData>(new List<KeyValuePair<string, ColumnData>>() {
+                        new KeyValuePair<string, ColumnData>("TILKM", new ColumnData("30"))
                     })
                 },
                 new SpecialityWebService.Path() {
                     Points = new List<Point>() { new Point(1,1), new Point(0,2), new Point(-1,3) },
                     Id = 0,
                     Fid = null,
-                    ColumnValues = new Dictionary<string, string>(new List<KeyValuePair<string, string>>() {
-                        new KeyValuePair<string, string>("TILKM", "50")
+                    ColumnValues = new Dictionary<string, ColumnData>(new List<KeyValuePair<string, ColumnData>>() {
+                        new KeyValuePair<string, ColumnData>("TILKM", new ColumnData("50"))
                     })
                 }
             };

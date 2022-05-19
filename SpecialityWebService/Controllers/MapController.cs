@@ -200,7 +200,6 @@ namespace SpecialityWebService.Controllers
                         network.DirectionForwardsValue = forwardsval;
                         network.DirectionBackwardsValue = backwardsval;
                         network.Weights = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("euclidean distance", "distance") };
-                        network.ExtractionColumns = network.Weights.Select(w => Lexer.ExtractPrimitiveTokens(Lexer.Primitive.Variable, w.Value)).SelectMany(i => i).Select(token => (string)token.Value).ToList();
 
                         network.Generate(maps[IP]);
                         break;

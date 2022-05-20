@@ -25,7 +25,6 @@ namespace SpecialityWebService.Controllers
     public class MapController : ControllerBase
     {
         private static Dictionary<string, Map> maps = new Dictionary<string, Map>();
-        private string IP => HttpContext.Connection.RemoteIpAddress.ToString() ?? HttpContext.Connection.LocalIpAddress.ToString();
 
         private readonly ILogger<MapController> _logger;
 
@@ -56,10 +55,10 @@ namespace SpecialityWebService.Controllers
             HttpContext.Response.Headers.Add(new KeyValuePair<string, StringValues>("response", new StringValues("No map instantiated, please call post on 'startsession/token={wmstoken};dataset={dataset};minres={minresolution}' first")));
         }
 
-        [HttpGet]
-        public FileContentResult GetMap()
+        [HttpGet("{usertoken}")]
+        public FileContentResult GetMap(string usertoken)
         {
-            if (!maps.ContainsKey(IP))
+            if (!maps.ContainsKey(usertoken))
             {
                 NoMapInstanciatedStatus();
                 //Gandalf momento
@@ -67,7 +66,7 @@ namespace SpecialityWebService.Controllers
                 return File(b, "image/jpeg");
             }
             HttpContext.Response.StatusCode = 200;
-            return File(maps[IP].RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, true, HttpContext), "image/jpg");
+            return File(maps[usertoken].RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, true, HttpContext), "image/jpg");
         }
 
         // GET: /Map
@@ -82,45 +81,45 @@ namespace SpecialityWebService.Controllers
             return File(map.RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, true, HttpContext), "image/jpg");
         }
 
-        [HttpGet("mapsize")]
-        public StringContent GetMapScreenSize()
+        [HttpGet("{usertoken}/mapsize")]
+        public StringContent GetMapScreenSize(string usertoken = "testuser")
         {
-            if (!maps.ContainsKey(IP))
+            if (!maps.ContainsKey(usertoken))
             {
                 NoMapInstanciatedStatus();
                 return new StringContent("");
             }
 
-            Rectangle screenview = maps[IP].Camera.ScreenViewPort;
-            return new StringContent(((int)screenview.Width + "," + (int)screenview.Height));
+            Rectangle screenview = maps[usertoken].Camera.ScreenViewPort;
+            return new StringContent((int)screenview.Width + "," + (int)screenview.Height);
         }
 
-        [HttpPost("startsession/token={wmstoken};dataset={dataset};minres={minresolution};bbox={minx},{miny},{maxx},{maxy}")]
-        public void Post(string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", int minresolution = 1280, double minx = 586835.1, double miny = 6135927.2, double maxx = 591812.3, double maxy = 6139738.0)
+        [HttpPost("{usertoken}/startsession/token={wmstoken};dataset={dataset};minres={minresolution};bbox={minx},{miny},{maxx},{maxy}")]
+        public void StartSession(string usertoken = "testuser", string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", int minresolution = 1280, double minx = 586835.1, double miny = 6135927.2, double maxx = 591812.3, double maxy = 6139738.0)
         {
             TryConvertDataset(dataset, out Map.Dataset ds);
-            maps[IP] = new Map(wmstoken, ds, minresolution, minx, miny, maxx, maxy);
+            maps[usertoken] = new Map(wmstoken, ds, minresolution, minx, miny, maxx, maxy);
             HttpContext.Response.StatusCode = 200;
         }
 
-        [HttpPost("startsession/token={wmstoken};dataset={dataset};minres={minresolution}")]
-        public void Post(string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", int minresolution = 1280)
+        [HttpPost("{usertoken}/startsession/token={wmstoken};dataset={dataset};minres={minresolution}")]
+        public void StartSession(string usertoken = "testuser", string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", int minresolution = 1280)
         {
             TryConvertDataset(dataset, out Map.Dataset ds);
-            maps[IP] = new Map(wmstoken, ds, minresolution);
+            maps[usertoken] = new Map(wmstoken, ds, minresolution);
             HttpContext.Response.StatusCode = 200;
         }
 
-        [HttpPost("startsession/token={wmstoken};dataset={dataset};width={width},height={height}")]
-        public void Post(string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", int width = 1280, int height = 960)
+        [HttpPost("{usertoken}/startsession/token={wmstoken};dataset={dataset};width={width},height={height}")]
+        public void StartSession(string usertoken = "testuser", string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", int width = 1280, int height = 960)
         {
             TryConvertDataset(dataset, out Map.Dataset ds);
-            maps[IP] = new Map(wmstoken, ds, width, height);
+            maps[usertoken] = new Map(wmstoken, ds, width, height);
             HttpContext.Response.StatusCode = 200;
         }
 
-        [HttpPost("changedataset={dataset}")]
-        public void Post(string dataset = "geodanmark60/vejmanhastigheder")
+        [HttpPost("{usertoken}/changedataset={dataset}")]
+        public void Post(string usertoken = "testuser", string dataset = "geodanmark60/vejmanhastigheder")
         {
             Map.Dataset ds;
             switch (dataset)
@@ -138,62 +137,62 @@ namespace SpecialityWebService.Controllers
                     HttpContext.Response.Headers.Add(new KeyValuePair<string, StringValues>("response", new StringValues("Expected either geodanmark60/vejmanhastigheder")));
                     return;
             }
-            if (maps.ContainsKey(IP))
+            if (maps.ContainsKey(usertoken))
             {
                 System.Diagnostics.Debug.WriteLine("Changed dataset to " + ds.ToString());
                 HttpContext.Response.StatusCode = 200;
-                maps[IP].ActiveDataset = ds;
+                maps[usertoken].ActiveDataset = ds;
             }
             else
                 NoMapInstanciatedStatus();
         }
 
-        [HttpPost("move={x},{y}")]
-        public void Post(int x, int y)
+        [HttpPost("{usertoken}/move={x},{y}")]
+        public void Post(string usertoken = "testuser", int x=0, int y=0)
         {
-            if (maps.ContainsKey(IP))
+            if (maps.ContainsKey(usertoken))
             {
                 HttpContext.Response.StatusCode = 200;
-                maps[IP].Camera.MoveScreen(x, y);
+                maps[usertoken].Camera.MoveScreen(x, y);
             }
             else
                 NoMapInstanciatedStatus();
         }
 
-        [HttpPost("zoom={zoom}")]
-        public void Post(double zoom)
+        [HttpPost("{usertoken}/zoom={zoom}")]
+        public void Post(string usertoken = "testuser", double zoom=1.0)
         {
-            if (maps.ContainsKey(IP))
+            if (maps.ContainsKey(usertoken))
             {
                 HttpContext.Response.StatusCode = 200;
-                maps[IP].Camera.ZoomView(zoom);
+                maps[usertoken].Camera.ZoomView(zoom);
             }
             else
                 NoMapInstanciatedStatus();
         }
 
-        [HttpPost("debug={debug}")]
-        public void Post(bool debug)
+        [HttpPost("{usertoken}/debug={debug}")]
+        public void Post(string usertoken = "testuser", bool debug=true)
         {
-            if (maps.ContainsKey(IP))
+            if (maps.ContainsKey(usertoken))
             {
                 HttpContext.Response.StatusCode = 200;
-                maps[IP].Debug = debug;
+                maps[usertoken].Debug = debug;
             }
             else
                 NoMapInstanciatedStatus();
         }
 
-        [HttpPost("generatenetwork/{type}/name={name};endpointtolerance={endpointtolerance};midpointtolerance={midpointtolerance}")]
-        public async void GenerateNetwork(string type = "QGIS", string name = "Testnetwork", double endpointtolerance = 2.5, double midpointtolerance = 2.5)
+        [HttpPost("{usertoken}/generatenetwork/{type}/name={name};endpointtolerance={endpointtolerance};midpointtolerance={midpointtolerance}")]
+        public void GenerateNetwork(string usertoken = "testuser", string type = "QGIS", string name = "Testnetwork", double endpointtolerance = 2.5, double midpointtolerance = 2.5)
         {
-            GenerateNetwork(type, name, endpointtolerance, midpointtolerance, null, null, null);
+            GenerateNetwork(usertoken, type, name, endpointtolerance, midpointtolerance, null, null, null);
         }
 
-        [HttpPost("generatenetwork/{type}/name={name};endpointtolerance={endpointtolerance};midpointtolerance={midpointtolerance};directioncolumn={directioncolumn},forwardsval={forwardsval},backwardsval={backwardsval}")]
-        public async void GenerateNetwork(string type = "QGIS", string name = "Testnetwork", double endpointtolerance = 2.5, double midpointtolerance = 2.5, string directioncolumn="", string forwardsval="", string backwardsval="")
+        [HttpPost("{usertoken}/generatenetwork/{type}/name={name};endpointtolerance={endpointtolerance};midpointtolerance={midpointtolerance};directioncolumn={directioncolumn},forwardsval={forwardsval},backwardsval={backwardsval}")]
+        public void GenerateNetwork(string usertoken = "testuser", string type = "QGIS", string name = "Testnetwork", double endpointtolerance = 2.5, double midpointtolerance = 2.5, string directioncolumn="", string forwardsval="", string backwardsval="")
         {
-            if (maps.ContainsKey(IP))
+            if (maps.ContainsKey(usertoken))
             {
                 switch(type)
                 {
@@ -210,12 +209,12 @@ namespace SpecialityWebService.Controllers
 
                         Stopwatch sw = new Stopwatch();
                         sw.Restart();
-                        network.Generate(maps[IP]);
+                        network.Generate(maps[usertoken]);
                         sw.Stop();
 
                         StringBuilder sb = new StringBuilder();
                         sb.AppendLine($"Generation time elapsed: {sw.ElapsedMilliseconds}ms");
-                        sb.AppendLine($"Original complexity: |V_paths| = {maps[IP].GML.GetFeatureCount()}");
+                        sb.AppendLine($"Original complexity: |V_paths| = {maps[usertoken].GML.GetFeatureCount()}");
                         sb.AppendLine($"Network complexity: |V| = {network.V.Count}, |E| = {network.E.Count}");
                         System.Diagnostics.Debug.WriteLine(sb.ToString());
                         HttpContext.Response.Headers.Add("networkstats", new StringValues(System.Net.WebUtility.UrlEncode(sb.ToString())));
@@ -230,8 +229,8 @@ namespace SpecialityWebService.Controllers
 
                         if (!Directory.Exists("./Users"))
                             Directory.CreateDirectory("./Users");
-                        if (!Directory.Exists($"./Users/{IP}"))
-                            Directory.CreateDirectory($"./Users/{IP.Replace(':', '.')}");
+                        if (!Directory.Exists($"./Users/{usertoken}"))
+                            Directory.CreateDirectory($"./Users/{usertoken.Replace(':', '.')}");
 
                         sb = new StringBuilder();
                         sb.AppendLine("Distance;Count");
@@ -239,10 +238,10 @@ namespace SpecialityWebService.Controllers
                         {
                             sb.AppendLine($"{Math.Round(stepsize * i + min, 2)};{buckets[i]}");
                         }
-                        System.IO.File.WriteAllText($"./Users/{IP.Replace(':', '.')}/{name}_histogram.csv", sb.ToString());
+                        System.IO.File.WriteAllText($"./Users/{usertoken}_{name}_histogram.csv", sb.ToString());
 
-                        maps[IP].Networks[network.Name] = network;
-                        maps[IP].RenderNetwork = network.Name;
+                        maps[usertoken].Networks[network.Name] = network;
+                        maps[usertoken].RenderNetwork = network.Name;
 
                         break;
                     case "Own":
@@ -255,19 +254,19 @@ namespace SpecialityWebService.Controllers
         }
 
         private bool overridestart = true;
-        [HttpPost("selectvertex={x},{y}")]
-        public void SelectVertex(int x, int y)
+        [HttpPost("{usertoken}/selectvertex={x},{y}")]
+        public void SelectVertex(string usertoken = "testuser", int x = 0, int y = 0)
         {
-            if (maps.ContainsKey(IP) && maps[IP].RenderNetwork != null && maps[IP].Networks.ContainsKey(maps[IP].RenderNetwork))
+            if (maps.ContainsKey(usertoken) && maps[usertoken].RenderNetwork != null && maps[usertoken].Networks.ContainsKey(maps[usertoken].RenderNetwork))
             {
                 HttpContext.Response.StatusCode = 200;
 
-                Point worldpos = maps[IP].Camera.ToWorld(x, y);
-                double widthquery = (20 / maps[IP].Camera.Zoom);
+                Point worldpos = maps[usertoken].Camera.ToWorld(x, y);
+                double widthquery = (20 / maps[usertoken].Camera.Zoom);
                 int startvertex = -1;
                 int endvertex = -1;
 
-                Network network = maps[IP].Networks[maps[IP].RenderNetwork];
+                Network network = maps[usertoken].Networks[maps[usertoken].RenderNetwork];
                 if (overridestart)
                 {
                     (double dist, startvertex) = network.ClosestVertex(worldpos, widthquery);
@@ -301,13 +300,13 @@ namespace SpecialityWebService.Controllers
         }
 
 
-        [HttpPost("setscreensize={width},{height}")]
-        public void Post2(int width, int height)
+        [HttpPost("{usertoken}/setscreensize={width},{height}")]
+        public void Post2(string usertoken = "testuser", int width = 1280, int height = 960)
         {
-            if (maps.ContainsKey(IP))
+            if (maps.ContainsKey(usertoken))
             {
                 HttpContext.Response.StatusCode = 200;
-                maps[IP].Camera.SetScreenSize(width, height);
+                maps[usertoken].Camera.SetScreenSize(width, height);
             }
             else
                 NoMapInstanciatedStatus();

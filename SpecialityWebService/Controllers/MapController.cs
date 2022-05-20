@@ -57,7 +57,7 @@ namespace SpecialityWebService.Controllers
         }
 
 
-        private int usertimeoutminutes = 1;
+        private int usertimeoutminutes = 20;
         private void ResetTimer(string id)
         {
             if (maps.ContainsKey(id))
@@ -259,7 +259,7 @@ namespace SpecialityWebService.Controllers
                         if (!Directory.Exists("./Users"))
                             Directory.CreateDirectory("./Users");
                         if (!Directory.Exists($"./Users/{usertoken}"))
-                            Directory.CreateDirectory($"./Users/{usertoken.Replace(':', '.')}");
+                            Directory.CreateDirectory($"./Users/{usertoken}");
 
                         sb = new StringBuilder();
                         sb.AppendLine("Distance;Count");

@@ -3,7 +3,7 @@
 var servers = 
     ["https://networkspeciality.dk",
      "https://localhost:44342"]
-var server = servers[1];
+var server = servers[0];
 
 var wmstoken = "024b9d34348dd56d170f634e067274c6";
 var sessiontoken = Math.random().toString(36).substr(2);

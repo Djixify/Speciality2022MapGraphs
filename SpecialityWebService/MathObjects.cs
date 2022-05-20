@@ -1,5 +1,6 @@
 ﻿using RBush;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace SpecialityWebService
@@ -109,6 +110,18 @@ namespace SpecialityWebService
                 return $"ll=({Left.ToString(CultureInfo.InvariantCulture)},{Bottom.ToString(CultureInfo.InvariantCulture)}),ur=({Right.ToString(CultureInfo.InvariantCulture)},{Top.ToString(CultureInfo.InvariantCulture)}),w={Width.ToString(CultureInfo.InvariantCulture)},h={Height.ToString(CultureInfo.InvariantCulture)}";
             }
 
+            public static Rectangle FromPoints(IEnumerable<Point> points)
+            {
+                double minx = double.PositiveInfinity, miny = double.PositiveInfinity, maxx = double.NegativeInfinity, maxy = double.NegativeInfinity;
+                foreach (Point p in points)
+                {
+                    minx = Math.Min(minx, p.X);
+                    miny = Math.Min(miny, p.Y);
+                    maxx = Math.Max(maxx, p.X);
+                    maxy = Math.Max(maxy, p.Y);
+                }
+                return Rectangle.FromLTRB(minx, maxy, maxx, miny);
+            }
 
             public static implicit operator Envelope(Rectangle rectangle) => new Envelope(rectangle.MinX, rectangle.MinY, rectangle.MaxX, rectangle.MaxY);
 

@@ -42,6 +42,16 @@ namespace SpecialityWebService
             return ToWorld((int)Math.Round(screenpos.X, 0), (int)Math.Round(screenpos.Y, 0));
         }
 
+        public System.Drawing.PointF ToWorldF(int x, int y)
+        {
+            return new System.Drawing.PointF((float)((x / Zoom) + Center.X - WorldViewPort.Width / 2.0), (float)(-(y / Zoom) + Center.Y + WorldViewPort.Height / 2.0));
+        }
+
+        public System.Drawing.PointF ToWorldF(Point screenpos)
+        {
+            return ToWorldF((int)Math.Round(screenpos.X, 0), (int)Math.Round(screenpos.Y, 0));
+        }
+
         public Point ToScreen(double x, double y)
         {
             return new Point((x + WorldViewPort.Width / 2.0 - Center.X) * Zoom, -(y - WorldViewPort.Height / 2.0 - Center.Y) * Zoom);
@@ -50,6 +60,16 @@ namespace SpecialityWebService
         public Point ToScreen(Point worldpos)
         {
             return ToScreen(worldpos.X, worldpos.Y);
+        }
+
+        public System.Drawing.PointF ToScreenF(int x, int y)
+        {
+            return new System.Drawing.PointF((float)((x + WorldViewPort.Width / 2.0 - Center.X) * Zoom), (float)(-(y - WorldViewPort.Height / 2.0 - Center.Y) * Zoom));
+        }
+
+        public System.Drawing.PointF ToScreenF(Point worldpos)
+        {
+            return ToScreenF((int)Math.Round(worldpos.X, 0), (int)Math.Round(worldpos.Y, 0));
         }
 
         public System.Drawing.Rectangle ToSystemRectangle(Rectangle rect)

@@ -25,7 +25,7 @@ namespace SpecialityWebService.Generation
 
         public List<Point> RenderPoints { get; set; }
 
-        public Rectangle BoundaryBox { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public Rectangle BoundaryBox { get; set; }
 
         public Dictionary<string, double> Weights;
 
@@ -41,7 +41,12 @@ namespace SpecialityWebService.Generation
             Fid = fid;
             Weights = new Dictionary<string, double>(weights);
             if (renderpoints != null && renderpoints.Count() >= 2 && (direction == Direction.Forward ? renderpoints.First() == P1 && renderpoints.Last() == P2 : renderpoints.Last() == P1 && renderpoints.First() == P2))
+            {
                 RenderPoints = new List<Point>(renderpoints);
+                BoundaryBox = Rectangle.FromPoints(RenderPoints);
+            }
+            else
+                throw new ArgumentException("Invalid render points added to edge");
         }
 
         public Edge Read(BinaryReader br)

@@ -22,13 +22,13 @@ namespace SpecialityWebService.Generation
             Point prevp = new Point(0.0,0.0);
             foreach (Point p in edgepoints)
             {
-                if (firstPoint)
+                if (!firstPoint)
                     distance += prevp.Distance(p);
                 firstPoint = false;
                 prevp = p;
             }
 
-            path.ColumnValues.Add("distance", new ColumnData(distance.ToString(CultureInfo.InvariantCulture), "infty"));
+            path.ColumnValues["distance"] = new ColumnData(distance.ToString(CultureInfo.InvariantCulture), "infty");
 
             return formulas.Select(formula => new KeyValuePair<string, double>(formula.Key, Convert.ToDouble(Parser.ExecuteExpression(formula.Value, ref environmentvariables).Value))).ToList();
         }
@@ -439,7 +439,7 @@ namespace SpecialityWebService.Generation
                 return false;
             }
 
-            if (double.TryParse($"{value1}.{value2}", out value))
+            if (double.TryParse($"{value1}.{value2}", NumberStyles.Number, CultureInfo.InvariantCulture, out value))
                 return true;
             else
             {
@@ -1052,7 +1052,7 @@ namespace SpecialityWebService.Generation
                                 token.Value = res2;
                                 return CastPrimitive<long>(token);
                             }
-                            else if (double.TryParse(value, out double res3))
+                            else if (double.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out double res3))
                             {
                                 token.Value = res3;
                                 return CastPrimitive<double>(token);

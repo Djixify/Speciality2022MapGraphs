@@ -29,16 +29,20 @@ namespace SpecialityWebService.Generation
                 foreach (Point p in path.Points)
                 {
                     pt2 = new Vertex(vertexid, p, new List<int>(), path.Id, path.Fid);
-                    pt2.IsEndpoint = p == path.Points.First() || p == path.Points.Last();
-                    (double _, int ext_p) = rtree.QueryClosest(p, endpointtolerance);
-                    if (ext_p == -1)
+                    bool isendpoint = p == path.Points.First() || p == path.Points.Last();
+                    (double dist, int ext_p) = rtree.QueryClosest(p, endpointtolerance);
+                    if (double.IsPositiveInfinity(dist))
                     {
+                        pt2.IsEndpoint = isendpoint;
                         rtree.Insert(new IntEnvelop(pt2));
                         V.Add(pt2);
                         vertexid++;
                     }
                     else
+                    {
                         pt2 = V[ext_p];
+                        pt2.IsEndpoint |= isendpoint;
+                    }
                     pt1 = pt2;
                 }
                 count++;
@@ -66,7 +70,7 @@ namespace SpecialityWebService.Generation
                         foreach (Vertex v in orderedVertices.Select(tup => tup.Item2))
                         {
                             v2 = v;
-                            if (!isFirstPoint2)
+                            if (!isFirstPoint2 && v2.Index != v1.Index)
                             {
                                 List<KeyValuePair<string, double>> weights = WeightCalculator.ComputeWeight(orderedVertices.Select(v => v.Item2.Location), path, weightcalculations, path.ColumnValues);
                                 bool forwards = directioncolumn == null || (path.ColumnValues[directioncolumn].Value == forwardsdirection);
@@ -88,6 +92,7 @@ namespace SpecialityWebService.Generation
                                 }
                             }
                             v1 = v2;
+                            isFirstPoint2 = false;
                         }
                     }
                     pt1 = pt2;

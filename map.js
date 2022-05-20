@@ -32,8 +32,17 @@ $(document).ready(async function(){
     console.log(server + "/Map/startsession/token=" + token + ";dataset=" + dataset + ";width=" + width + ",height=" + height);
     
     updateserver();
+    $('#map').css('width', width);
+    $('#map').css('height', height);
     
     moveMap(0,0);
+
+    var timer = setTimeout(notclick, 100);
+    var isclick = false;
+
+    function notclick() {
+        isclick = false;
+    }
 
     $('#map').mousedown(function(e) {
        console.log("Started dragging");
@@ -46,6 +55,9 @@ $(document).ready(async function(){
        startY = e.clientY;
        console.log(e.clientX + ' ' + e.clientY + ' ' + e.pageX + ' ' + e.pageY)
        dragging = true;
+       isclick = true;
+       clearTimeout(timer);
+       timer = setTimeout(notclick, 100);
     });
  
     $('#map').mousemove(function(e){
@@ -58,13 +70,18 @@ $(document).ready(async function(){
   
     $('#map').mouseup(function(e) {
         console.log("Stopped dragging");
-        moveMap(-(e.clientX - startX), (e.clientY - startY));
+        if (isclick) {
+            selectvertex(e.pageX - $('#map').offset().left, e.pageY - $('#map').offset().top)
+        }
+        else {
+            moveMap(-(e.clientX - startX), (e.clientY - startY));
+        }
         dragging = false;
     });
 });
 
 function updateserver() {
-	var tmpserver = $('#server').val();
+	var tmpserver = servers[parseInt($('#server').val())];
     fetch(tmpserver + "/Map/startsession/token=" + token + ";dataset=" + dataset + ";width=" + width + ",height=" + height, postrequestsettings).then(img =>
         {
             console.log("Successfully connected to new server: " + tmpserver);
@@ -158,6 +175,18 @@ function changedataset(){
 
 function moveMap(moveX, moveY) {
     fetch(server + "/Map/move=" + moveX.toString() + "," + moveY.toString(), putrequestsettings)
+        .then(result => 
+        {
+            $('#statuslabel').text("Status: Successfully connected to new server: " + server);
+            console.log("updated image");
+            $('#map').css('background-image', 'url(\"' + server + '/Map?t=' + new Date().getTime() + '\")');
+            $('#map').css('background-position-x', 0);
+            $('#map').css('background-position-y', 0);
+        })
+}
+
+function selectvertex(x, y) {
+    fetch(server + "/Map/selectvertex=" + Math.round(x).toString() + "," + Math.round(y).toString(), putrequestsettings)
         .then(result => 
         {
             $('#statuslabel').text("Status: Successfully connected to new server: " + server);

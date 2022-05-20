@@ -5,6 +5,7 @@ using Microsoft.Extensions.Primitives;
 using SpecialityWebService.Generation;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
 using System.Linq;
@@ -66,7 +67,7 @@ namespace SpecialityWebService.Controllers
                 return File(b, "image/jpeg");
             }
             HttpContext.Response.StatusCode = 200;
-            return File(maps[IP].RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, HttpContext), "image/jpg");
+            return File(maps[IP].RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, true, HttpContext), "image/jpg");
         }
 
         // GET: /Map
@@ -78,7 +79,7 @@ namespace SpecialityWebService.Controllers
 
             Map map = new Map(wmstoken, ds, 1280, minx, miny, maxx, maxy);
 
-            return File(map.RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, HttpContext), "image/jpg");
+            return File(map.RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, true, HttpContext), "image/jpg");
         }
 
         [HttpGet("mapsize")]
@@ -183,8 +184,14 @@ namespace SpecialityWebService.Controllers
                 NoMapInstanciatedStatus();
         }
 
+        [HttpPost("generatenetwork/{type}/name={name};endpointtolerance={endpointtolerance};midpointtolerance={midpointtolerance}")]
+        public async void GenerateNetwork(string type = "QGIS", string name = "Testnetwork", double endpointtolerance = 2.5, double midpointtolerance = 2.5)
+        {
+            GenerateNetwork(type, name, endpointtolerance, midpointtolerance, null, null, null);
+        }
+
         [HttpPost("generatenetwork/{type}/name={name};endpointtolerance={endpointtolerance};midpointtolerance={midpointtolerance};directioncolumn={directioncolumn},forwardsval={forwardsval},backwardsval={backwardsval}")]
-        public async void Post(string type, string name, double endpointtolerance, double midpointtolerance, string directioncolumn, string forwardsval, string backwardsval)
+        public async void GenerateNetwork(string type = "QGIS", string name = "Testnetwork", double endpointtolerance = 2.5, double midpointtolerance = 2.5, string directioncolumn="", string forwardsval="", string backwardsval="")
         {
             if (maps.ContainsKey(IP))
             {
@@ -193,7 +200,7 @@ namespace SpecialityWebService.Controllers
                     case "QGIS":
                         HttpContext.Response.StatusCode = 200;
                         INetworkGenerator qgis = new QGISReferenceAlgorithm();
-                        Network network = new Network(name, qgis, new Rtree<int>());
+                        Network network = new Network(name, qgis, new Rtree<int>(), new Rtree<int>());
                         network.EndPointTolerance = endpointtolerance;
                         network.MidPointTolerance = midpointtolerance;
                         network.DirectionColumn = directioncolumn;
@@ -201,11 +208,92 @@ namespace SpecialityWebService.Controllers
                         network.DirectionBackwardsValue = backwardsval;
                         network.Weights = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("euclidean distance", "distance") };
 
+                        Stopwatch sw = new Stopwatch();
+                        sw.Restart();
                         network.Generate(maps[IP]);
+                        sw.Stop();
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.AppendLine($"Generation time elapsed: {sw.ElapsedMilliseconds}ms");
+                        sb.AppendLine($"Original complexity: |V_paths| = {maps[IP].GML.GetFeatureCount()}");
+                        sb.AppendLine($"Network complexity: |V| = {network.V.Count}, |E| = {network.E.Count}");
+                        System.Diagnostics.Debug.WriteLine(sb.ToString());
+                        HttpContext.Response.Headers.Add("networkstats", new StringValues(System.Net.WebUtility.UrlEncode(sb.ToString())));
+
+                        IEnumerable<double> distances = network.E.Select(e => e.Weights["euclidean distance"]);
+                        double min = distances.Min(), max = distances.Max();
+                        double range = max - min;
+                        int[] buckets = new int[101];
+                        double stepsize = range / (buckets.Length - 1);
+                        foreach (double dist in distances)
+                            buckets[(int)((dist - min) / stepsize + 0.49999)] += 1;
+
+                        if (!Directory.Exists("./Users"))
+                            Directory.CreateDirectory("./Users");
+                        if (!Directory.Exists($"./Users/{IP}"))
+                            Directory.CreateDirectory($"./Users/{IP.Replace(':', '.')}");
+
+                        sb = new StringBuilder();
+                        sb.AppendLine("Distance;Count");
+                        for(int i = 0; i < buckets.Length; i++)
+                        {
+                            sb.AppendLine($"{Math.Round(stepsize * i + min, 2)};{buckets[i]}");
+                        }
+                        System.IO.File.WriteAllText($"./Users/{IP.Replace(':', '.')}/{name}_histogram.csv", sb.ToString());
+
+                        maps[IP].Networks[network.Name] = network;
+                        maps[IP].RenderNetwork = network.Name;
+
                         break;
                     case "Own":
 
                         break;
+                }
+            }
+            else
+                NoMapInstanciatedStatus();
+        }
+
+        private bool overridestart = true;
+        [HttpPost("selectvertex={x},{y}")]
+        public void SelectVertex(int x, int y)
+        {
+            if (maps.ContainsKey(IP) && maps[IP].RenderNetwork != null && maps[IP].Networks.ContainsKey(maps[IP].RenderNetwork))
+            {
+                HttpContext.Response.StatusCode = 200;
+
+                Point worldpos = maps[IP].Camera.ToWorld(x, y);
+                double widthquery = (20 / maps[IP].Camera.Zoom);
+                int startvertex = -1;
+                int endvertex = -1;
+
+                Network network = maps[IP].Networks[maps[IP].RenderNetwork];
+                if (overridestart)
+                {
+                    (double dist, startvertex) = network.ClosestVertex(worldpos, widthquery);
+                    if (startvertex != endvertex)
+                    {
+                        bool found = double.IsPositiveInfinity(dist);
+                        network.SelectedStartVertex = found ? startvertex : -1;
+                        if (found)
+                            overridestart = !overridestart;
+                    }
+                }
+                else
+                {
+                    (double dist, endvertex) = network.ClosestVertex(worldpos, widthquery);
+                    if (endvertex != startvertex)
+                    {
+                        bool found = double.IsPositiveInfinity(dist);
+                        network.SelectedEndVertex = found ? endvertex : -1;
+                        if (found)
+                            overridestart = !overridestart;
+                    }
+                }
+
+                if (startvertex > -1 && endvertex > -1)
+                {
+                    network.EdgesBetween = network.FindDijkstraPath(startvertex, endvertex, "euclidean distance");
                 }
             }
             else

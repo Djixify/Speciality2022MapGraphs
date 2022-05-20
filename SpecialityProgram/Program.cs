@@ -80,7 +80,6 @@ namespace SpecialityProgram
             List<Vertex> items = rtree.Query(new Rectangle(1, 1, 0.5));
 
             Map map = new Map("024b9d34348dd56d170f634e067274c6", Dataset.VejmanHastigheder, 1280, 960);
-            INetworkGenerator qgis = new QGISReferenceAlgorithm();
             var paths = new List<SpecialityWebService.Path>() { 
                 new SpecialityWebService.Path() {
                     Points = new List<Point>() { new Point(0,0), new Point(1,1), new Point(2,2) },
@@ -103,6 +102,26 @@ namespace SpecialityProgram
             foreach (SpecialityWebService.Path path in paths)
                 path.UpdateBoundaryBox();
 
+            INetworkGenerator qgis = new QGISReferenceAlgorithm();
+            Network network = new Network("testnetwork", qgis, new Rtree<int>(), new Rtree<int>());
+            network.EndPointTolerance = 0.5;
+            network.MidPointTolerance = 0.5;
+            network.Weights = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("euclidean distance", "distance") };
+
+            network.Generate(paths);
+
+            (double _, int startv) = network.ClosestVertex(new Point(0, 0), 0.5);
+            (double _, int endv) = network.ClosestVertex(new Point(-1, 3), 0.5);
+            List<Edge> edges = network.FindDijkstraPath(network.V[startv], network.V[endv], "euclidean distance");
+            edges.Reverse();
+            List<Point> expectedpath = new List<Point>() { new Point(0,0), new Point(1,1), new Point(0,2), new Point(-1,3) };
+            List<Point> resultpath = new List<Point>() { edges[0].P1 };
+            resultpath.AddRange(edges.Select(e => e.P2));
+            foreach (Edge e in edges)
+            {
+                System.Diagnostics.Debug.WriteLine($"{e.P1} -> {e.P2}");
+            }
+            System.Diagnostics.Debug.WriteLine("Matched test path: " + expectedpath.SequenceEqual(resultpath));
 
             //Network network = qgis.Generate(map.GML.GetPathEnumerator(Rectangle.Infinite()), 0.5, null, null, new List<string>() { "TILKM" });
 

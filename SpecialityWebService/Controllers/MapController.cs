@@ -13,6 +13,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using static SpecialityWebService.MathObjects;
 
@@ -24,7 +25,7 @@ namespace SpecialityWebService.Controllers
     [Route("[controller]")]
     public class MapController : ControllerBase
     {
-        private static Dictionary<string, Map> maps = new Dictionary<string, Map>();
+        private static Dictionary<string, Tuple<Timer,Map>> maps = new Dictionary<string, Tuple<Timer, Map>>();
 
         private readonly ILogger<MapController> _logger;
 
@@ -55,6 +56,25 @@ namespace SpecialityWebService.Controllers
             HttpContext.Response.Headers.Add(new KeyValuePair<string, StringValues>("response", new StringValues("No map instantiated, please call post on 'startsession/token={wmstoken};dataset={dataset};minres={minresolution}' first")));
         }
 
+
+        private int usertimeoutminutes = 1;
+        private void ResetTimer(string id)
+        {
+            if (maps.ContainsKey(id))
+            {
+                maps[id].Item1.Change(TimeSpan.FromMinutes(usertimeoutminutes), TimeSpan.Zero);
+            }
+        }
+
+        private void RemoveTimer(object? obj)
+        {
+            if (obj is string id && maps.ContainsKey(id))
+            {
+                maps[id].Item1.Dispose();
+                maps.Remove(id);
+            }
+        }
+
         [HttpGet("{usertoken}")]
         public FileContentResult GetMap(string usertoken)
         {
@@ -66,7 +86,8 @@ namespace SpecialityWebService.Controllers
                 return File(b, "image/jpeg");
             }
             HttpContext.Response.StatusCode = 200;
-            return File(maps[usertoken].RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, true, HttpContext), "image/jpg");
+            ResetTimer(usertoken);
+            return File(maps[usertoken].Item2.RenderImage(System.Drawing.Imaging.ImageFormat.Jpeg, true, HttpContext), "image/jpg");
         }
 
         // GET: /Map
@@ -90,7 +111,8 @@ namespace SpecialityWebService.Controllers
                 return new StringContent("");
             }
 
-            Rectangle screenview = maps[usertoken].Camera.ScreenViewPort;
+            Rectangle screenview = maps[usertoken].Item2.Camera.ScreenViewPort;
+            ResetTimer(usertoken);
             return new StringContent((int)screenview.Width + "," + (int)screenview.Height);
         }
 
@@ -98,7 +120,8 @@ namespace SpecialityWebService.Controllers
         public void StartSession(string usertoken = "testuser", string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", int minresolution = 1280, double minx = 586835.1, double miny = 6135927.2, double maxx = 591812.3, double maxy = 6139738.0)
         {
             TryConvertDataset(dataset, out Map.Dataset ds);
-            maps[usertoken] = new Map(wmstoken, ds, minresolution, minx, miny, maxx, maxy);
+            maps[usertoken] = Tuple.Create(new Timer(RemoveTimer, usertoken, 0, 0), new Map(wmstoken, ds, minresolution, minx, miny, maxx, maxy));
+            ResetTimer(usertoken);
             HttpContext.Response.StatusCode = 200;
         }
 
@@ -106,7 +129,8 @@ namespace SpecialityWebService.Controllers
         public void StartSession(string usertoken = "testuser", string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", int minresolution = 1280)
         {
             TryConvertDataset(dataset, out Map.Dataset ds);
-            maps[usertoken] = new Map(wmstoken, ds, minresolution);
+            maps[usertoken] = Tuple.Create(new Timer(RemoveTimer, usertoken, 0, 0), new Map(wmstoken, ds, minresolution));
+            ResetTimer(usertoken);
             HttpContext.Response.StatusCode = 200;
         }
 
@@ -114,7 +138,8 @@ namespace SpecialityWebService.Controllers
         public void StartSession(string usertoken = "testuser", string wmstoken = "024b9d34348dd56d170f634e067274c6", string dataset = "geodanmark60/vejmanhastigheder", int width = 1280, int height = 960)
         {
             TryConvertDataset(dataset, out Map.Dataset ds);
-            maps[usertoken] = new Map(wmstoken, ds, width, height);
+            maps[usertoken] = Tuple.Create(new Timer(RemoveTimer, usertoken, 0, 0), new Map(wmstoken, ds, width, height));
+            ResetTimer(usertoken);
             HttpContext.Response.StatusCode = 200;
         }
 
@@ -141,7 +166,8 @@ namespace SpecialityWebService.Controllers
             {
                 System.Diagnostics.Debug.WriteLine("Changed dataset to " + ds.ToString());
                 HttpContext.Response.StatusCode = 200;
-                maps[usertoken].ActiveDataset = ds;
+                maps[usertoken].Item2.ActiveDataset = ds;
+                ResetTimer(usertoken);
             }
             else
                 NoMapInstanciatedStatus();
@@ -153,7 +179,8 @@ namespace SpecialityWebService.Controllers
             if (maps.ContainsKey(usertoken))
             {
                 HttpContext.Response.StatusCode = 200;
-                maps[usertoken].Camera.MoveScreen(x, y);
+                maps[usertoken].Item2.Camera.MoveScreen(x, y);
+                ResetTimer(usertoken);
             }
             else
                 NoMapInstanciatedStatus();
@@ -165,7 +192,8 @@ namespace SpecialityWebService.Controllers
             if (maps.ContainsKey(usertoken))
             {
                 HttpContext.Response.StatusCode = 200;
-                maps[usertoken].Camera.ZoomView(zoom);
+                maps[usertoken].Item2.Camera.ZoomView(zoom);
+                ResetTimer(usertoken);
             }
             else
                 NoMapInstanciatedStatus();
@@ -177,7 +205,8 @@ namespace SpecialityWebService.Controllers
             if (maps.ContainsKey(usertoken))
             {
                 HttpContext.Response.StatusCode = 200;
-                maps[usertoken].Debug = debug;
+                maps[usertoken].Item2.Debug = debug;
+                ResetTimer(usertoken);
             }
             else
                 NoMapInstanciatedStatus();
@@ -209,12 +238,12 @@ namespace SpecialityWebService.Controllers
 
                         Stopwatch sw = new Stopwatch();
                         sw.Restart();
-                        network.Generate(maps[usertoken]);
+                        network.Generate(maps[usertoken].Item2);
                         sw.Stop();
 
                         StringBuilder sb = new StringBuilder();
                         sb.AppendLine($"Generation time elapsed: {sw.ElapsedMilliseconds}ms");
-                        sb.AppendLine($"Original complexity: |V_paths| = {maps[usertoken].GML.GetFeatureCount()}");
+                        sb.AppendLine($"Original complexity: |V_paths| = {maps[usertoken].Item2.GML.GetFeatureCount()}");
                         sb.AppendLine($"Network complexity: |V| = {network.V.Count}, |E| = {network.E.Count}");
                         System.Diagnostics.Debug.WriteLine(sb.ToString());
                         HttpContext.Response.Headers.Add("networkstats", new StringValues(System.Net.WebUtility.UrlEncode(sb.ToString())));
@@ -240,14 +269,15 @@ namespace SpecialityWebService.Controllers
                         }
                         System.IO.File.WriteAllText($"./Users/{usertoken}_{name}_histogram.csv", sb.ToString());
 
-                        maps[usertoken].Networks[network.Name] = network;
-                        maps[usertoken].RenderNetwork = network.Name;
+                        maps[usertoken].Item2.Networks[network.Name] = network;
+                        maps[usertoken].Item2.RenderNetwork = network.Name;
 
                         break;
                     case "Own":
 
                         break;
                 }
+                ResetTimer(usertoken);
             }
             else
                 NoMapInstanciatedStatus();
@@ -257,16 +287,16 @@ namespace SpecialityWebService.Controllers
         [HttpPost("{usertoken}/selectvertex={x},{y}")]
         public void SelectVertex(string usertoken = "testuser", int x = 0, int y = 0)
         {
-            if (maps.ContainsKey(usertoken) && maps[usertoken].RenderNetwork != null && maps[usertoken].Networks.ContainsKey(maps[usertoken].RenderNetwork))
+            if (maps.ContainsKey(usertoken) && maps[usertoken].Item2.RenderNetwork != null && maps[usertoken].Item2.Networks.ContainsKey(maps[usertoken].Item2.RenderNetwork))
             {
                 HttpContext.Response.StatusCode = 200;
 
-                Point worldpos = maps[usertoken].Camera.ToWorld(x, y);
-                double widthquery = (20 / maps[usertoken].Camera.Zoom);
+                Point worldpos = maps[usertoken].Item2.Camera.ToWorld(x, y);
+                double widthquery = (20 / maps[usertoken].Item2.Camera.Zoom);
                 int startvertex = -1;
                 int endvertex = -1;
 
-                Network network = maps[usertoken].Networks[maps[usertoken].RenderNetwork];
+                Network network = maps[usertoken].Item2.Networks[maps[usertoken].Item2.RenderNetwork];
                 if (overridestart)
                 {
                     (double dist, startvertex) = network.ClosestVertex(worldpos, widthquery);
@@ -294,6 +324,7 @@ namespace SpecialityWebService.Controllers
                 {
                     network.EdgesBetween = network.FindDijkstraPath(startvertex, endvertex, "euclidean distance");
                 }
+                ResetTimer(usertoken);
             }
             else
                 NoMapInstanciatedStatus();
@@ -306,7 +337,8 @@ namespace SpecialityWebService.Controllers
             if (maps.ContainsKey(usertoken))
             {
                 HttpContext.Response.StatusCode = 200;
-                maps[usertoken].Camera.SetScreenSize(width, height);
+                maps[usertoken].Item2.Camera.SetScreenSize(width, height);
+                ResetTimer(usertoken);
             }
             else
                 NoMapInstanciatedStatus();

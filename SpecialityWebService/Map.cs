@@ -43,14 +43,6 @@ namespace SpecialityWebService
                     _foregroundcolor = GML is GeoDanmark60_GML ? System.Drawing.Color.FromArgb(150, 35, 171, 255) : System.Drawing.Color.FromArgb(150, 219, 30, 42);
                     _vertexstrokecolor = GML is GeoDanmark60_GML ? System.Drawing.Color.FromArgb(150, 25, 124, 185) : System.Drawing.Color.FromArgb(150, 132, 0, 0);
 
-                    _pathpen = new System.Drawing.Pen(_foregroundcolor);
-                    _pathpen.LineJoin = LineJoin.Bevel;
-                    _edgepen = new System.Drawing.Pen(_foregroundcolor);
-                    _edgepen.LineJoin = LineJoin.Bevel;
-                    _edgeghostpen = new System.Drawing.Pen(_backgroundcolor);
-                    _edgeghostpen.DashStyle = DashStyle.Dash;
-                    _edgeghostpen.LineJoin = LineJoin.Bevel;
-
                     _endpointimage = System.Drawing.Image.FromFile(@"Resources\Images\" + (GML is GeoDanmark60_GML ? "endpoint.png" : "vmendpoint.png"));
                     _midpointimage = System.Drawing.Image.FromFile(@"Resources\Images\" + (GML is GeoDanmark60_GML ? "midpoint.png" : "vmmidpoint.png"));
 
@@ -69,15 +61,15 @@ namespace SpecialityWebService
         private System.Drawing.Color _backgroundcolor;
         private System.Drawing.Color _foregroundcolor;
         private System.Drawing.Color _vertexstrokecolor;
-
-        private System.Drawing.Pen _pathpen;
-        private System.Drawing.Pen _edgepen;
-        private System.Drawing.Pen _edgeghostpen;
-        private System.Drawing.Pen _networkhighlightpen = new System.Drawing.Pen(System.Drawing.Color.LimeGreen);
+        private System.Drawing.Color _networkhighlightcolor = System.Drawing.Color.LimeGreen;
 
         private System.Drawing.Image _endpointimage;
         private System.Drawing.Image _midpointimage;
 
+        private float pathwidth = 4f;
+        private float edgewidth = 4f;
+        private int vertexsize = 10;
+        private int vertexsizestep = 2;
 
         public Map(string token, Dataset dataset, int minresolution)
         {
@@ -194,8 +186,13 @@ namespace SpecialityWebService
                 int scale = (int)(worldview.Width / screenview.Width * 37.795275591 * 100);
                 if (shouldrendernetwork)
                 {
-                    _edgepen.Width = (float)8;
-                    _edgeghostpen.Width = (float)8;
+                    var _edgepen = new System.Drawing.Pen(_foregroundcolor);
+                    _edgepen.LineJoin = LineJoin.Bevel;
+                    _edgepen.Width = edgewidth;
+                    var _edgeghostpen = new System.Drawing.Pen(_backgroundcolor);
+                    _edgeghostpen.LineJoin = LineJoin.Bevel;
+                    _edgeghostpen.DashStyle = DashStyle.Dash;
+                    _edgeghostpen.Width = edgewidth;
                     foreach (Edge e in network.E.Where(e => e.BoundaryBox.Overlapping(worldview)))
                     {
                         
@@ -225,8 +222,6 @@ namespace SpecialityWebService
                         numberofpoints += e.RenderPoints.Count;
                     }
 
-                    int vertexsize = 16;
-                    int vertexsizestep = 4;
                     foreach (Vertex v in network.V.Where(v => v.BoundaryBox.Overlapping(worldview)))
                     {
                         int circlewidth = vertexsize + v.Edges.Count * vertexsizestep;
@@ -235,7 +230,7 @@ namespace SpecialityWebService
                         location.X -= circlewidth / 2;
                         location.Y -= circlewidth / 2;
 
-                        g.FillEllipse(new System.Drawing.SolidBrush(v.Index == network.SelectedStartVertex || v.Index == network.SelectedEndVertex ? _networkhighlightpen.Color : _vertexstrokecolor), new System.Drawing.RectangleF(location, new System.Drawing.SizeF(circlewidth, circlewidth)));
+                        g.FillEllipse(new System.Drawing.SolidBrush(v.Index == network.SelectedStartVertex || v.Index == network.SelectedEndVertex ? _networkhighlightcolor : _vertexstrokecolor), new System.Drawing.RectangleF(location, new System.Drawing.SizeF(circlewidth, circlewidth)));
                         if (rendercount > renderthreshold)
                         {
                             rendercount = 0;
@@ -249,6 +244,7 @@ namespace SpecialityWebService
                     foreach (int eid in network.EdgesBetween ?? new List<int>())
                     {
                         Edge e = network.E[eid];
+                        var _networkhighlightpen = new System.Drawing.Pen(_networkhighlightcolor);
                         _networkhighlightpen.Width = _edgepen.Width;
                         g.DrawLines(_networkhighlightpen, e.RenderPoints.Select(p => Camera.ToScreenF(p)).ToArray());
                         g.Flush();
@@ -260,7 +256,9 @@ namespace SpecialityWebService
                 {
                     if (GML != null)
                     {
-                        _pathpen.Width = (float)8;
+                        var _pathpen = new System.Drawing.Pen(_foregroundcolor);
+                        _pathpen.Width = (float)4;
+                        _pathpen.LineJoin = LineJoin.Bevel;
                         IEnumerable<Path> paths = GML.GetPathEnumerator(worldview);
                         foreach (Path path in GML.GetPathEnumerator(worldview, new List<string>() { }))
                         {

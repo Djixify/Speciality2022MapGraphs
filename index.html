@@ -77,13 +77,40 @@
       position: absolute;
       bottom: 0%;
       left: 0%;
-      transform: translate(10px, -50px);
+      transform: translate(10px, -90px);
     }
     .container .btn2 {
       position: absolute;
       bottom: 0%;
       left: 0%;
+      transform: translate(10px, -50px);
+    }
+    .container .btn3 {
+      position: absolute;
+      bottom: 0%;
+      left: 0%;
       transform: translate(10px, -10px);
+    }
+
+    .grid-container {
+      display: grid;
+      gap: 10px;
+      padding: 5px;
+    }
+
+    .item1 {
+      grid-column: 1 / span 2;
+      grid-row: 1;
+    }
+
+    .item2 {
+      grid-column: 3;
+      grid-row: 1 / span 2;
+    }
+
+    .item5 {
+      grid-column: 1 / span 3;
+      grid-row: 3;
     }
     </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js">
@@ -95,21 +122,43 @@
     <h1 class="centered">Map network generator</h1>
 	  <!--<input type="text" id="server">
     <button onclick="updateserver()">Update</button>-->
-    <select id="server" onchange="updateserver2()">
+    <div>
+      Server selection: 
+      <select id="server" onchange="updateserver2()">
         <option value="0">https://networkspeciality.dk</option>
         <option value="1" selected="selected">https://localhost:44342</option>
-	</select>
+      </select>
+    </div>
     <p id="statuslabel">Status: </p>
     <div class="container">
       <img id="map"/>
       <button class="btn1" onclick="zoominclicked()">Zoom in</button>
       <button class="btn2" onclick="zoomoutclicked()">Zoom out</button>
+      <button class="btn3" onclick="toggledebug()">Debug</button>
     </div>
-    <button onclick="toggledebug()">Debug</button>
-	  <select id="datasetselector" onchange="changedataset()">
-		  <option value="0">Vejhastigheder small</option>
-		  <option value="1">Geodanmark60 small</option>
-	  </select>
+    <div>
+      <h3>Network settings:</h3>
+      <div class="grid-container">
+        <div style="grid-column: 1; grid-row: 1;">Dataset (displayed above when chosen):</div>
+        <select id="datasetselector" style="grid-column: 2; grid-row: 1;" onchange="changedataset()">
+          <option value="0">Vejhastigheder small</option>
+          <option value="1">Geodanmark60 small</option>
+        </select>
+        <div style="grid-column: 1; grid-row: 2;">Name of network (for recall purposes):</div>
+        <input type="text" id="networkname" placeholder="Example: network1, testnetwork etc." style="grid-column: 2; grid-row: 2;">
+        <div style="grid-column: 1; grid-row: 3;">Connection radius for midpoints (circles):</div>
+        <input type="number" min="0" max="10" step="0.5" value="1.0" id="midpointradius" style="grid-column: 2; grid-row: 3;">
+        <div style="grid-column: 1; grid-row: 4;">Connection radius for endpoints (diamonds):</div>
+        <input type="number" min="0" max="10" step="0.5" value="1.0" id="endpointradius" style="grid-column: 2; grid-row: 4;">
+        <div style="grid-column: 1; grid-row: 5;">Direction column:</div>
+        <input type="text" id="directioncolumn" placeholder="Example for vejhast.: SIDEOFROAD" style="grid-column: 2; grid-row: 5;">
+        <div style="grid-column: 1; grid-row: 6;">Direction forward value:</div>
+        <input type="text" id="directionforward" placeholder="Example for vejhast.: H" style="grid-column: 2; grid-row: 6;">
+        <div style="grid-column: 1; grid-row: 7;">Direction backwards value:</div>
+        <input type="text" id="directionbackward" placeholder="Example for vejhast.: V" style="grid-column: 2; grid-row: 7;">
+      </div>
+      <button class="btn1" onclick="generateclicked()">Generate network</button>
+    </div>
   </div>
   <script src="map.js" ></script>
 </body>

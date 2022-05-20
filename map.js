@@ -3,7 +3,7 @@
 var servers = 
     ["https://networkspeciality.dk",
      "https://localhost:44342"]
-var server = servers[4]; 
+var server = servers[0]; 
 
 var token = "024b9d34348dd56d170f634e067274c6";
 var datasets = ["vejmanhastigheder", "geodanmark60"];

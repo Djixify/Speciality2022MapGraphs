@@ -6,6 +6,7 @@ using SpecialityWebService.Generation;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Pipelines;
 using System.Linq;
@@ -265,9 +266,9 @@ namespace SpecialityWebService.Controllers
                         sb.AppendLine("Distance;Count");
                         for(int i = 0; i < buckets.Length; i++)
                         {
-                            sb.AppendLine($"{Math.Round(stepsize * i + min, 2)};{buckets[i]}");
+                            sb.AppendLine($"{Math.Round(stepsize * i + min, 2).ToString(CultureInfo.InvariantCulture)},{buckets[i]}");
                         }
-                        System.IO.File.WriteAllText($"./Users/{usertoken}_{name}_histogram.csv", sb.ToString());
+                        System.IO.File.WriteAllText($"./Users/{usertoken}/{name}_histogram.csv", sb.ToString());
 
                         maps[usertoken].Item2.Networks[network.Name] = network;
                         maps[usertoken].Item2.RenderNetwork = network.Name;

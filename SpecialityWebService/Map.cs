@@ -41,7 +41,7 @@ namespace SpecialityWebService
                     }
                     _backgroundcolor = GML is GeoDanmark60_GML ? System.Drawing.Color.FromArgb(60, 35, 171, 255) : System.Drawing.Color.FromArgb(60, 219, 30, 42);
                     _foregroundcolor = GML is GeoDanmark60_GML ? System.Drawing.Color.FromArgb(150, 35, 171, 255) : System.Drawing.Color.FromArgb(150, 219, 30, 42);
-                    _vertexstrokecolor = GML is GeoDanmark60_GML ? System.Drawing.Color.FromArgb(150, 25, 124, 185) : System.Drawing.Color.FromArgb(150, 132, 0, 0);
+                    _vertexstrokecolor = GML is GeoDanmark60_GML ? System.Drawing.Color.FromArgb(255, 25, 124, 185) : System.Drawing.Color.FromArgb(255, 132, 0, 0);
 
                     _endpointimage = System.Drawing.Image.FromFile(@"Resources\Images\" + (GML is GeoDanmark60_GML ? "endpoint.png" : "vmendpoint.png"));
                     _midpointimage = System.Drawing.Image.FromFile(@"Resources\Images\" + (GML is GeoDanmark60_GML ? "midpoint.png" : "vmmidpoint.png"));

@@ -5,6 +5,7 @@ using System.Net;
 using static SpecialityWebService.Map;
 using static SpecialityWebService.MathObjects;
 using static SpecialityWebService.Generation.Parser;
+using RBush;
 
 namespace SpecialityProgram
 {
@@ -12,10 +13,11 @@ namespace SpecialityProgram
     {
         public static void Main(string[] args)
         {
-            TestLexer();
+            //TestLexer();
 
-            TestNetwork();
+            //TestNetwork();
 
+            TestRangeTree();
             //while (true)
                 //GetWMS().Wait();
         }
@@ -125,6 +127,30 @@ namespace SpecialityProgram
 
             //Network network = qgis.Generate(map.GML.GetPathEnumerator(Rectangle.Infinite()), 0.5, null, null, new List<string>() { "TILKM" });
 
+        }
+
+
+        private class QueryPoint : IBound
+        {
+            public Point Point { get; set; }
+
+            public Rectangle BoundaryBox { get { return new Rectangle(Point.X, Point.Y, 0.0000001); } set { } }
+
+            public QueryPoint(double x, double y)
+            {
+                Point = new Point(x, y);
+            }
+        }
+
+        private static void TestRangeTree()
+        {
+            RangeTree<QueryPoint> tree = new RangeTree<QueryPoint>(new List<QueryPoint>()
+            {
+                new QueryPoint(0.0,4.0),
+                new QueryPoint(1.0,5.0),
+                new QueryPoint(7.0,3.0),
+                new QueryPoint(3.0,2.0)
+            });
         }
 
         public static async Task GetWMS()

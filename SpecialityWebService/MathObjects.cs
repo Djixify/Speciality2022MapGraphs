@@ -127,5 +127,26 @@ namespace SpecialityWebService
 
             public static implicit operator Rectangle(Envelope envelope) => Rectangle.FromLTRB(envelope.MinX, envelope.MaxY, envelope.MaxX, envelope.MinY);
         }
+
+        public struct Region
+        {
+            public double Left, Right, Width, Mid;
+            public Region(double left, double right)
+            {
+                Left = left;
+                Right = right;
+                Width = right - left;
+                Mid = left + Width / 2.0;
+            }
+
+            public bool Intersects(Region other) => Intersects(other.Left, other.Right);
+            public bool Intersects(double left, double right) => !(this.Right < left || this.Left > right);
+            public bool IntersectsBiased(Region other) => IntersectsBiased(other.Left, other.Right);
+            public bool IntersectsBiased(double left, double right) => !(this.Right < left || this.Left >= right);
+            public bool Subset(Region other) => Subset(other.Left, other.Right);
+            public bool Subset(double left, double right) => !(this.Left < left || this.Right > right);
+            public bool SubsetBiased(Region other) => SubsetBiased(other.Left, other.Right);
+            public bool SubsetBiased(double left, double right) => !(this.Left < left || this.Right > right);
+        }
     }
 }

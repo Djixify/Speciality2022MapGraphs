@@ -13,7 +13,7 @@ namespace SpecialityWebService.Generation
         public int Index { get; set; } = -1;
         public bool IsEndpoint { get; set; } = false;
 
-        private double _boundsradius = 0.00001;
+        private double _boundsradius = 0.00000001;
         private Point _location;
         public Point Location 
         { 

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -16,6 +17,8 @@ namespace SpecialityWebService
 {
     public class Startup
     {
+        string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -26,8 +29,18 @@ namespace SpecialityWebService
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
             services.AddControllers().AddControllersAsServices();
+            
+            services.AddCors(options =>
+            {
+                options.AddPolicy(name: MyAllowSpecificOrigins,
+                                  policy =>
+                                  {
+                                      policy.WithOrigins("*");
+                                      policy.WithMethods("*");
+                                      policy.WithHeaders("*");
+                                  });
+            });
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "SpecialityWebService", Version = "v1" });
@@ -39,7 +52,7 @@ namespace SpecialityWebService
         {
             //if (env.IsDevelopment())
             //{
-                app.UseDeveloperExceptionPage();
+            app.UseDeveloperExceptionPage();
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SpecialityWebService v1"));
             //}
@@ -47,7 +60,12 @@ namespace SpecialityWebService
             app.UseHttpsRedirection();
 
             app.UseDefaultFiles();
-            app.UseStaticFiles();
+
+            //app.UseCors(MyAllowSpecificOrigins);
+
+            string generatedresourcepath = @"Resources\Generated";
+            foreach (string subdir in Directory.GetDirectories(generatedresourcepath))
+                Directory.Delete(subdir, true);
 
             app.UseRouting();
 

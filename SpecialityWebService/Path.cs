@@ -109,7 +109,7 @@ namespace SpecialityWebService
                                 XElement path = member.Elements().ElementAt(0);
                                 XElement poslist = path.Elements().ElementAt(0);
                                 string[] positionpairs = poslist.Value.Split(' ');
-                                for (int i = 0; i < positionpairs.Length; i += 2)
+                                for (int i = 0; i < positionpairs.Length - 1; i += 2)
                                 {
                                     double x = Double.Parse(positionpairs[i], CultureInfo.InvariantCulture);
                                     double y = Double.Parse(positionpairs[i + 1], CultureInfo.InvariantCulture);

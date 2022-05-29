@@ -8,7 +8,7 @@ namespace SpecialityWebService.Generation
 {
     public interface IFileItem<T>
     {
-        public T Read(BinaryReader br);
-        public T Write(BinaryWriter bw);
+        public void Read(BinaryReader br);
+        public void Write(BinaryWriter bw);
     }
 }

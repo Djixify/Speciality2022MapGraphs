@@ -13,7 +13,7 @@ using static SpecialityWebService.MathObjects;
 
 namespace SpecialityWebService
 {
-    public class Map
+    public class Map : IDisposable
     {
         public enum Dataset
         {
@@ -21,47 +21,55 @@ namespace SpecialityWebService
             VejmanHastigheder
         }
 
+        public enum DatasetSize
+        {
+            Small,
+            Medium,
+            Large
+        }
+
+        public string ActiveDatasetName => System.IO.Path.GetFileNameWithoutExtension(Datasets[_activedataset][_activedatasetsize]);
+        public string ActiveDatasetFilePath => Datasets[_activedataset][_activedatasetsize];
+        public Dictionary<Dataset, Dictionary<DatasetSize, string>> Datasets = new Dictionary<Dataset, Dictionary<DatasetSize, string>>(
+            new KeyValuePair<Dataset, Dictionary<DatasetSize, string>>[]
+            {
+                KeyValuePair.Create(Dataset.GeoDanmark60, new Dictionary<DatasetSize, string>(new KeyValuePair<DatasetSize, string>[]
+                {
+                    KeyValuePair.Create(DatasetSize.Small, @"Resources\Vectordata\dfvejedatatinystige.gml"),
+                    KeyValuePair.Create(DatasetSize.Medium, @"Resources\Vectordata\dfvejedata.gml"),
+                    KeyValuePair.Create(DatasetSize.Large, @"Resources\Vectordata\dfvejedatalarge.gml")
+                })),
+                KeyValuePair.Create(Dataset.VejmanHastigheder, new Dictionary<DatasetSize, string>(new KeyValuePair<DatasetSize, string>[]
+                {
+                    KeyValuePair.Create(DatasetSize.Small, @"Resources\Vectordata\vmvejedatatinystige.gml"),
+                    KeyValuePair.Create(DatasetSize.Medium, @"Resources\Vectordata\vmvejedata.gml"),
+                    KeyValuePair.Create(DatasetSize.Large, @"Resources\Vectordata\vmvejedatalarge.gml")
+                }))
+            }
+        );
+
+        private string SessionId = null;
+
         public DataforsyningenBackground_WMS BackgroundWMS { get; set; }
         private Dataset _activedataset = Dataset.VejmanHastigheder;
-        public Dataset ActiveDataset
-        {
-            get { return _activedataset; }
-            set
-            {
-                if (value != _activedataset || GML == null)
-                {
-                    switch (value)
-                    {
-                        case Dataset.GeoDanmark60:
-                            GML = new GeoDanmark60_GML(@"Resources\Vectordata\dfvejedata.gml");
-                            break;
-                        case Dataset.VejmanHastigheder:
-                            GML = new Vejmanhastigheder_GML(@"Resources\Vectordata\vmvejedata.gml");
-                            break;
-                    }
-                    _backgroundcolor = GML is GeoDanmark60_GML ? System.Drawing.Color.FromArgb(60, 35, 171, 255) : System.Drawing.Color.FromArgb(60, 219, 30, 42);
-                    _foregroundcolor = GML is GeoDanmark60_GML ? System.Drawing.Color.FromArgb(150, 35, 171, 255) : System.Drawing.Color.FromArgb(150, 219, 30, 42);
-                    _vertexstrokecolor = GML is GeoDanmark60_GML ? System.Drawing.Color.FromArgb(255, 25, 124, 185) : System.Drawing.Color.FromArgb(255, 132, 0, 0);
-
-                    _endpointimage = System.Drawing.Image.FromFile(@"Resources\Images\" + (GML is GeoDanmark60_GML ? "endpoint.png" : "vmendpoint.png"));
-                    _midpointimage = System.Drawing.Image.FromFile(@"Resources\Images\" + (GML is GeoDanmark60_GML ? "midpoint.png" : "vmmidpoint.png"));
-
-                    _activedataset = value;
-                }
-            }
-        }
+        private DatasetSize _activedatasetsize = DatasetSize.Small;
 
         public bool Debug { get; set; } = true;
         public IGMLReader GML { get; set; } = null;
         public Camera Camera { get; set; }
 
         public Dictionary<string, Network> Networks { get; set; } = new Dictionary<string, Network>();
-        public string RenderNetwork = null;
+        public bool RenderDataset = true;
+        public string SelectedNetwork = null;
 
         private System.Drawing.Color _backgroundcolor;
         private System.Drawing.Color _foregroundcolor;
         private System.Drawing.Color _vertexstrokecolor;
-        private System.Drawing.Color _networkhighlightcolor = System.Drawing.Color.LimeGreen;
+        private System.Drawing.Color _networkhighlightcolor = System.Drawing.Color.Green;
+        private System.Drawing.Color[] _pathhighlightcolors = new System.Drawing.Color[] {
+            System.Drawing.Color.Cyan,
+            System.Drawing.Color.Magenta,
+            System.Drawing.Color.Yellow };
 
         private System.Drawing.Image _endpointimage;
         private System.Drawing.Image _midpointimage;
@@ -71,11 +79,12 @@ namespace SpecialityWebService
         private int vertexsize = 10;
         private int vertexsizestep = 2;
 
-        public Map(string token, Dataset dataset, int minresolution)
+        public Map(string token, string sessionid, Dataset dataset, DatasetSize datasetsize, int minresolution)
         {
             BackgroundWMS = new DataforsyningenBackground_WMS(token); //Remember parse token
+            SessionId = sessionid;
 
-            ActiveDataset = dataset;
+            SetDataset(dataset, datasetsize);
 
             Rectangle r = GML.GetBoundaryBox();
 
@@ -96,33 +105,35 @@ namespace SpecialityWebService
             int pixelHeight = (int)htmp;
 
 
-            Camera = new Camera(pixelWidth, pixelHeight, r.GetCenter().X, r.GetCenter().Y, pixelWidth / width);
+            Camera = new Camera(pixelWidth, pixelHeight, r.Center.X, r.Center.Y, pixelWidth / width);
 
             System.Diagnostics.Debug.WriteLine(GML.GetFeatureCount());
             System.Diagnostics.Debug.WriteLine(GML.GetBoundaryBox());
         }
 
-        public Map(string token, Dataset dataset, int width, int height)
+        public Map(string token, string sessionid, Dataset dataset, DatasetSize datasetsize, int width, int height)
         {
             BackgroundWMS = new DataforsyningenBackground_WMS(token); //Remember parse token
+            SessionId = sessionid;
 
-            ActiveDataset = dataset;
+            SetDataset(dataset, datasetsize);
 
             Rectangle r = GML.GetBoundaryBox();
 
             double worldwidth = r.MaxX - r.MinX;
 
-            Camera = new Camera(width, height, r.GetCenter().X, r.GetCenter().Y, width / worldwidth);
+            Camera = new Camera(width, height, r.Center.X, r.Center.Y, width / worldwidth);
 
             System.Diagnostics.Debug.WriteLine(GML.GetFeatureCount());
             System.Diagnostics.Debug.WriteLine(GML.GetBoundaryBox());
         }
 
-        public Map(string token, Dataset dataset, int minresolution, double minx, double miny, double maxx, double maxy)
+        public Map(string token, string sessionid, Dataset dataset, DatasetSize datasetsize, int minresolution, double minx, double miny, double maxx, double maxy)
         {
             BackgroundWMS = new DataforsyningenBackground_WMS(token); //Remember parse token
+            SessionId = sessionid;
 
-            ActiveDataset = dataset;
+            SetDataset(dataset, datasetsize);
 
             double width = maxx - minx;
             double height = maxy - miny;
@@ -149,10 +160,55 @@ namespace SpecialityWebService
 
         }
 
+
+        public void SetDataset(Dataset type, DatasetSize size)
+        {
+            _activedatasetsize = size;
+            _activedataset = type;
+            switch (_activedataset)
+            {
+                case Dataset.GeoDanmark60:
+                    GML = new GeoDanmark60_GML(Datasets[_activedataset][_activedatasetsize]);
+                    _backgroundcolor = System.Drawing.Color.FromArgb(60, 35, 171, 255);
+                    _foregroundcolor = System.Drawing.Color.FromArgb(150, 35, 171, 255);
+                    _vertexstrokecolor = System.Drawing.Color.FromArgb(255, 25, 124, 185);
+                    _endpointimage = System.Drawing.Image.FromFile(@"Resources\Images\endpoint.png");
+                    _midpointimage = System.Drawing.Image.FromFile(@"Resources\Images\midpoint.png");
+                    break;
+                case Dataset.VejmanHastigheder:
+                    GML = new Vejmanhastigheder_GML(Datasets[_activedataset][_activedatasetsize]);
+                    _backgroundcolor = System.Drawing.Color.FromArgb(60, 219, 30, 42);
+                    _foregroundcolor = System.Drawing.Color.FromArgb(150, 219, 30, 42);
+                    _vertexstrokecolor = System.Drawing.Color.FromArgb(255, 132, 0, 0);
+                    _endpointimage = System.Drawing.Image.FromFile(@"Resources\Images\vmendpoint.png");
+                    _midpointimage = System.Drawing.Image.FromFile(@"Resources\Images\vmmidpoint.png");
+                    break;
+            }
+
+            foreach (Network network in Networks.Values)
+                network.Dispose();
+            Networks = new Dictionary<string, Network>();
+            if (Directory.Exists(Network.NetworkFolder) && Directory.Exists(System.IO.Path.Combine(Network.NetworkFolder, SessionId)) && Directory.Exists(System.IO.Path.Combine(Network.NetworkFolder, SessionId, ActiveDatasetName)))
+            {
+                foreach (string file in Directory.EnumerateFiles(System.IO.Path.Combine(Network.NetworkFolder, SessionId, ActiveDatasetName)).Where(file => file.EndsWith(".network")))
+                {
+                    Networks.Add(System.IO.Path.GetFileNameWithoutExtension(file), Network.Load(file));
+                }
+            }
+
+        }
+
         public System.Drawing.PointF[] ConvertToPointF(Path path) => 
             path.Points.Select(p => Camera.ToScreenF(p)).ToArray();
 
-        public byte[] RenderImage(System.Drawing.Imaging.ImageFormat format, bool rendernetwork = true, HttpContext context = null)
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            return sb.ToString();
+        }
+
+        public byte[] RenderImage(System.Drawing.Imaging.ImageFormat format, HttpContext context = null)
         {
             byte[] background = BackgroundWMS.GetImageBytes(Camera);
             Rectangle screenview = Camera.ScreenViewPort;
@@ -173,8 +229,8 @@ namespace SpecialityWebService
 
                 //this.Camera.TransformSpaceToWorld(g);
 
-                bool shouldrendernetwork = rendernetwork && RenderNetwork != null && Networks.ContainsKey(RenderNetwork);
-                Network network = shouldrendernetwork ? Networks[RenderNetwork] : null;
+                bool shouldrendernetwork = !RenderDataset && SelectedNetwork != null && Networks.ContainsKey(SelectedNetwork);
+                Network network = shouldrendernetwork ? Networks[SelectedNetwork] : null;
 
                 int rendercount = 0;
                 int renderthreshold = 100;
@@ -193,9 +249,12 @@ namespace SpecialityWebService
                     _edgeghostpen.LineJoin = LineJoin.Bevel;
                     _edgeghostpen.DashStyle = DashStyle.Dash;
                     _edgeghostpen.Width = edgewidth;
-                    foreach (Edge e in network.E.Where(e => e.BoundaryBox.Overlapping(worldview)))
+                    List<int> edges = network.QueryEdges(worldview);
+                    foreach (int eindex in edges)
                     {
-                        
+                        Edge e = network.E[eindex];
+                        if (e == null || e.RenderPoints.Count == 0)
+                            continue;
                         Point prevp = new Point(0,0);
                         bool firstpoint = true;
                         foreach (Point p in e.RenderPoints)
@@ -214,7 +273,7 @@ namespace SpecialityWebService
                             prevp = p;
                             firstpoint = false;
                         }
-                         g.DrawLine(_edgepen, Camera.ToScreenF(e.P1), Camera.ToScreenF(e.P2));
+                         g.DrawLine(_edgepen, Camera.ToScreenF(e.RenderPoints.First()), Camera.ToScreenF(e.RenderPoints.Last()));
 
                         //g.DrawLines(_edgeghostpen, e.RenderPoints.Select(p => Camera.ToScreenF(p)).ToArray());
                         g.Flush();
@@ -222,15 +281,49 @@ namespace SpecialityWebService
                         numberofpoints += e.RenderPoints.Count;
                     }
 
-                    foreach (Vertex v in network.V.Where(v => v.BoundaryBox.Overlapping(worldview)))
+                    if (network.EdgesBetween != null)
                     {
+                        int i = 0;
+                        foreach (KeyValuePair<string, List<int>> path in network.EdgesBetween)
+                        {
+                            foreach (int eid in path.Value)
+                            {
+                                Edge e = network.E[eid];
+                                var _networkhighlightpen = new System.Drawing.Pen(_pathhighlightcolors[i % 3]);
+                                _networkhighlightpen.Width = _edgepen.Width + (8 - i * 4);
+                                g.DrawLines(_networkhighlightpen, e.RenderPoints.Select(p => Camera.ToScreenF(p)).ToArray());
+                                g.Flush();
+                            }
+                            i++;
+                        }
+                    }
+
+
+                    List<int> vertices = network.QueryVertices(worldview);
+                    foreach (int vindex in vertices)
+                    {
+                        Vertex v = network.V[vindex];
+                        if (v == null)
+                            continue;
                         int circlewidth = vertexsize + v.Edges.Count * vertexsizestep;
 
                         var location = Camera.ToScreenF(v.Location);
                         location.X -= circlewidth / 2;
                         location.Y -= circlewidth / 2;
 
-                        g.FillEllipse(new System.Drawing.SolidBrush(v.Index == network.SelectedStartVertex || v.Index == network.SelectedEndVertex ? _networkhighlightcolor : _vertexstrokecolor), new System.Drawing.RectangleF(location, new System.Drawing.SizeF(circlewidth, circlewidth)));
+                        var color = _vertexstrokecolor;
+                        int i = 0;
+                        foreach (KeyValuePair<string, List<int>> path in network.EdgesBetween ?? new Dictionary<string, List<int>>())
+                        {
+                            if (v.Edges.Any(eid => path.Value.Contains(eid)))
+                            {
+                                color = _pathhighlightcolors[i % 3];
+                                i++;
+                            }
+                        }
+                        color = v.Index == network.SelectedStartVertex || v.Index == network.SelectedEndVertex ? _networkhighlightcolor : color;
+
+                        g.FillEllipse(new System.Drawing.SolidBrush(color), new System.Drawing.RectangleF(location, new System.Drawing.SizeF(circlewidth, circlewidth)));
                         if (rendercount > renderthreshold)
                         {
                             rendercount = 0;
@@ -241,16 +334,7 @@ namespace SpecialityWebService
                         numberofvertices++;
                     }
 
-                    foreach (int eid in network.EdgesBetween ?? new List<int>())
-                    {
-                        Edge e = network.E[eid];
-                        var _networkhighlightpen = new System.Drawing.Pen(_networkhighlightcolor);
-                        _networkhighlightpen.Width = _edgepen.Width;
-                        g.DrawLines(_networkhighlightpen, e.RenderPoints.Select(p => Camera.ToScreenF(p)).ToArray());
-                        g.Flush();
-                    }
-
-                    numberofvertices = network.V.Count(v => v.BoundaryBox.Overlapping(worldview));
+                    numberofvertices = vertices.Count;
                 }
                 else
                 {
@@ -274,7 +358,21 @@ namespace SpecialityWebService
                                 foreach (Point p in path.Points)
                                 {
                                     bool isendpoint = p == path.Points.Last() || p == path.Points.First();
-                                    var image = isendpoint ? _endpointimage : _midpointimage;
+                                    System.Drawing.Image image = null;
+                                    if (isendpoint)
+                                    {
+                                        lock (_endpointimage)
+                                        {
+                                            image = (System.Drawing.Image)_endpointimage.Clone();
+                                        }
+                                    }
+                                    else
+                                    {
+                                        lock (_midpointimage)
+                                        {
+                                            image = (System.Drawing.Image)_midpointimage.Clone();
+                                        }
+                                    }
                                     var location = Camera.ToScreenF(p);
                                     location.X -= image.Width / 2;
                                     location.Y -= image.Height / 2;
@@ -309,13 +407,20 @@ namespace SpecialityWebService
 
                 if (Debug)
                     g.DrawString(sb.ToString(), new System.Drawing.Font("Ariel", 20, System.Drawing.FontStyle.Italic | System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel), System.Drawing.Brushes.LimeGreen, new System.Drawing.PointF(10, 10));
-                if (context != null)
-                    context.Response.Headers.Add("stats", new Microsoft.Extensions.Primitives.StringValues(System.Net.WebUtility.UrlEncode(sb.ToString())));
 
                 MemoryStream ms2 = new MemoryStream();
                 bm.Save(ms2, format);
                 return ms2.ToArray();
             }
+        }
+
+        public void Dispose()
+        {
+            foreach (Network network in Networks.Values)
+            {
+                network.Dispose();
+            }
+            Networks.Clear();
         }
     }
 }

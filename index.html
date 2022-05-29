@@ -12,6 +12,10 @@
       height: 100%;
     }
 
+    div {
+      align-self: center;
+    }
+
     html {
       display: table;
       margin: auto;
@@ -59,8 +63,24 @@
       background-color: black;
     }
 
-    input, select {
+    button:disabled,
+    button[disabled]{
+      background-color: #888;
+      color: #666;
+    }
+
+    select {
       padding: 5px;
+      height: 36px;
+      max-height: 36px;
+      align-self: center;
+    }
+
+    input {
+      padding: 5px;
+      height: 24px;
+      max-height: 24px;
+      align-self: center;
     }
 
     .container {
@@ -79,17 +99,28 @@
       left: 0%;
       transform: translate(10px, -90px);
     }
+
     .container .btn2 {
       position: absolute;
       bottom: 0%;
       left: 0%;
       transform: translate(10px, -50px);
     }
+
     .container .btn3 {
       position: absolute;
       bottom: 0%;
       left: 0%;
       transform: translate(10px, -10px);
+    }
+    
+    .framed {
+      position: relative;
+      background: rgb(245, 245, 245);
+      border-radius: 10px;
+      padding: 5px;
+      box-shadow: 5px 5px rgba(0,0,0,.15);
+      transition: all .4s ease;
     }
 
     .grid-container {
@@ -98,19 +129,12 @@
       padding: 5px;
     }
 
-    .item1 {
-      grid-column: 1 / span 2;
-      grid-row: 1;
-    }
-
-    .item2 {
-      grid-column: 3;
-      grid-row: 1 / span 2;
-    }
-
-    .item5 {
-      grid-column: 1 / span 3;
-      grid-row: 3;
+    .bottomseperator {
+      border-style: solid;
+      border-color:rgb(231, 231, 231);
+      border-width: 0px;
+      border-bottom-width: 2px;
+      border-radius: 5px;
     }
     </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js">
@@ -118,46 +142,94 @@
     </script>
 </head>
 <body>
-  <div class="bodydiv">
+  <div id="bodydiv" class="bodydiv">
     <h1 class="centered">Map network generator</h1>
-	  <!--<input type="text" id="server">
-    <button onclick="updateserver()">Update</button>-->
-    <div>
-      Server selection: 
-      <select id="server" onchange="updateserver2()">
-        <option value="0" selected="selected">https://networkspeciality.dk</option>
-        <option value="1">https://localhost:44342</option>
-      </select>
-    </div>
-    <p id="statuslabel">Status: </p>
-    <div class="container">
+    <div class="container framed">
       <img id="map"/>
       <button class="btn1" onclick="zoominclicked()">Zoom in</button>
       <button class="btn2" onclick="zoomoutclicked()">Zoom out</button>
-      <button class="btn3" onclick="toggledebug()">Debug</button>
+      <button class="btn3" onclick="toggleview()">Toggle view</button>
     </div>
-    <div>
-      <h3>Network settings:</h3>
+    <div style="margin-top: 10px;">
       <div class="grid-container">
-        <div style="grid-column: 1; grid-row: 1;">Dataset (displayed above when chosen):</div>
-        <select id="datasetselector" style="grid-column: 2; grid-row: 1;" onchange="changedataset()">
-          <option value="0">Vejhastigheder small</option>
-          <option value="1">Geodanmark60 small</option>
-        </select>
-        <div style="grid-column: 1; grid-row: 2;">Name of network (for recall purposes):</div>
-        <input type="text" id="networkname" placeholder="Example: network1, testnetwork etc." style="grid-column: 2; grid-row: 2;">
-        <div style="grid-column: 1; grid-row: 3;">Connection radius for midpoints (circles):</div>
-        <input type="number" min="0" max="10" step="0.5" value="1.0" id="midpointradius" style="grid-column: 2; grid-row: 3;">
-        <div style="grid-column: 1; grid-row: 4;">Connection radius for endpoints (diamonds):</div>
-        <input type="number" min="0" max="10" step="0.5" value="1.0" id="endpointradius" style="grid-column: 2; grid-row: 4;">
-        <div style="grid-column: 1; grid-row: 5;">Direction column:</div>
-        <input type="text" id="directioncolumn" placeholder="Example for vejhast.: SIDEOFROAD" style="grid-column: 2; grid-row: 5;">
-        <div style="grid-column: 1; grid-row: 6;">Direction forward value:</div>
-        <input type="text" id="directionforward" placeholder="Example for vejhast.: H" style="grid-column: 2; grid-row: 6;">
-        <div style="grid-column: 1; grid-row: 7;">Direction backwards value:</div>
-        <input type="text" id="directionbackward" placeholder="Example for vejhast.: V" style="grid-column: 2; grid-row: 7;">
+        <div class="grid-container framed" style="grid-column: 1; grid-row: 1;">
+          <h4 style="grid-column: 1; grid-row: 1;">Server selection (leave default):</h4> 
+          <select style="grid-column: 2; grid-row: 1; align-self: center;" id="server" onchange="updateserver2()">
+            <option value="0" selected>https://networkspeciality.dk</option>
+            <option value="1">https://localhost:44342</option>
+            <option value="2">https://localhost:5001</option>
+          </select>
+          <div id="statuslabel" style="grid-column: 1 / span 2; grid-row: 2;"></div>
+        </div>
+        <div class="grid-container framed" style="grid-column: 1; grid-row: 2;">
+          <h4 style="grid-column: 1; grid-row: 1;">Dataset (displayed above when chosen):</h4>
+          <select id="datasetselector" style="grid-column: 2; grid-row: 1;" onchange="changedataset()">
+            <option value="0">Vejhastigheder small</option>
+            <option value="1">Geodanmark60 small</option>
+            <option value="2">Vejhastigheder medium</option>
+            <option value="3">Geodanmark60 medium</option>
+            <option value="4">Vejhastigheder large</option>
+            <option value="5">Geodanmark60 large</option>
+          </select>
+          <div style="grid-column: 1; grid-row: 2;">Existing networks:</div>
+          <select id="presetsselect" onchange="changedPreset()" style="grid-column: 2; grid-row: 2; align-self: center;">
+
+          </select>
+        </div>
+        <div id="networksettingsdiv" class="grid-container framed" style="grid-column: 1; grid-row: 3;">
+          <div style="grid-column: 1; grid-row: 1;"><h4 style="display: inline-block; margin-right: 10px;">Network settings:</h4></div>
+          <div style="grid-column: 1; grid-row: 2;">Name of network (for recall purposes):*</div>
+          <input type="text" id="networkname" placeholder="Example: network1, testnetwork etc." style="grid-column: 2; grid-row: 2;">
+          <div style="grid-column: 1; grid-row: 3;">Generation algorithm:</div>
+          <select id="generatorselector" style="grid-column: 2; grid-row: 3;">
+            <option value="QGIS">Reference - QGIS</option>
+            <option value="Proposed">Proposed</option>
+          </select>
+          <div style="grid-column: 1; grid-row: 4;">Connection radius for midpoints (circles):*</div>
+          <input type="number" min="0" max="10" step="0.5" value="2.5" id="midpointradius" style="grid-column: 2; grid-row: 4;">
+          <div style="grid-column: 1; grid-row: 5;">Connection radius for endpoints (diamonds):*</div>
+          <input type="number" min="0" max="10" step="0.5" value="2.5" id="endpointradius" style="grid-column: 2; grid-row: 5;">
+          <div style="grid-column: 1; grid-row: 6;">Direction column:</div>
+          <input type="text" id="directioncolumn" placeholder="Example for vejhast.: SIDEOFROAD" style="grid-column: 2; grid-row: 6;">
+          <div style="grid-column: 1; grid-row: 7;">Direction forward value:</div>
+          <input type="text" id="directionforward" placeholder="Example for vejhast.: H" style="grid-column: 2; grid-row: 7;">
+          <div style="grid-column: 1; grid-row: 8;">Direction backwards value:</div>
+          <input type="text" id="directionbackward" placeholder="Example for vejhast.: V" style="grid-column: 2; grid-row: 8;">
+          <div class="framed" style="grid-column: 1 / span 2; grid-row: 9;">
+            <h4>Weight formulas:</h4>
+            <div class="grid-container">
+              <div style="grid-column: 1; grid-row: 1;">Label: <input type="text" id="weightlabel1" value="Euclidean distance"></input></div>
+              <div style="grid-column: 2; grid-row: 1;">Formula: <input type="text" style="min-width: 450px;" id="weightformula1" value="distance"></input><button class="btn1" onclick="validateFormula('#weightformula1')">Validate</button></div>
+            </div>
+            <div class="grid-container">
+              <div style="grid-column: 1; grid-row: 1;">Label: <input type="text" id="weightlabel2"></input></div>
+              <div style="grid-column: 2; grid-row: 1;">Formula: <input type="text" style="min-width: 450px;" id="weightformula2"></input><button class="btn1" onclick="validateFormula('#weightformula2')">Validate</button></div>
+            </div>
+            <div class="grid-container">
+              <div style="grid-column: 1; grid-row: 1;">Label: <input type="text" id="weightlabel3"></input></div>
+              <div style="grid-column: 2; grid-row: 1;">Formula: <input type="text" style="min-width: 450px;" id="weightformula3"></input><button class="btn1" onclick="validateFormula('#weightformula3')">Validate</button></div>
+            </div>
+            <div>Validation message: <div style="display: inline-block; max-width: 700px;" id="formulaparsing">None</div></div><br>
+            Syntax for weight formulas:
+            <ul style="max-width: 500px;">
+              <li style="overflow-wrap: break-word;"><b>Types:</b> column, "value", 10 (number)</li>
+              <li style="overflow-wrap: break-word;"><b>Reserved:</b> distance, infinite, infinity, infty, true, false</li>
+              <li style="overflow-wrap: break-word;"><b>Arith. Operators:</b> +, -, *, /, % (modulus), ** (power)</li>
+              <li style="overflow-wrap: break-word;"><b>Logic Operators:</b> ==, !=, &#60;, &#60;=, &#62;, &#62;=, not, and, or (note: true &#60;=&#62; 1, false &#60;=&#62; 0)</li>
+              <li style="overflow-wrap: break-word;"><b>Functions:</b> sqrt, pow, floor, ceil, cos, sin, tan, acos, asin, atan</li>
+              <li style="overflow-wrap: break-word;"><b>Example 1(shortest distance):</b> distance</li>
+              <li style="overflow-wrap: break-word;"><b>Example 2(ETA, but only roads):</b> (type == "road") * distance / speed_limit + (type != "road") * infinite</li>
+              <li style="overflow-wrap: break-word;"><b>Example 3(ETA, slow vehicle):</b> distance / ((speed_limit &#62; 80) * 80 + (speed_limit &#60;= 80) * speed_limit)</li>
+            </ul>
+          </div>
+          <div style="grid-column: 1; grid-row: 11; max-width: 600px;"><div style="display: inline-block; margin-right: 10px;">Messages: </div><div id="networksettingtext" style="display: inline-block; color: red;"></div></div>
+          <button class="btn1" style="grid-column: 2; grid-row: 11;" onclick="generateclicked()">Generate network</button>
+        </div>
+        <div class="framed" style="grid-column: 2; grid-row: 1 / span 3; width:100%; height:100%;">
+          <h4 style="display: inline-block;">Network statistics:</h4><button class="btn1" onclick="updateNetworkstats()">Update</button>
+          <p id="networkstats"></p>
+        </div>
       </div>
-      <button class="btn1" onclick="generateclicked()">Generate network</button>
     </div>
   </div>
   <script src="map.js" ></script>

@@ -72,10 +72,9 @@ namespace SpecialityWebService.Generation
             String = 1,
             Boolean = 2,
             Date = 4,
-            Time = 8,
-            Integer = 16,
-            Float = 32,
-            Variable = 64
+            Integer = 8,
+            Float = 16,
+            Variable = 32
         }
 
         public enum Operator
@@ -253,10 +252,6 @@ namespace SpecialityWebService.Generation
                         case Primitive.Date:
                             DateTime d = (DateTime)Value;
                             sb.Append($"{d.Day}/{d.Month}/{d.Year}");
-                            break;
-                        case Primitive.Time:
-                            DateTime t = (DateTime)Value;
-                            sb.Append($"{t.Hour}:{t.Minute}{(t.Second > 0 ? ":" + t.Second : "")}");
                             break;
                     }
                     return sb.Append(">").ToString();
@@ -441,122 +436,6 @@ namespace SpecialityWebService.Generation
 
             if (double.TryParse($"{value1}.{value2}", NumberStyles.Number, CultureInfo.InvariantCulture, out value))
                 return true;
-            else
-            {
-                pointer = oldpointer;
-                return false;
-            }
-        }
-
-        private static bool ConsumeTime(ref string input, ref int pointer, int offset, int length, out DateTime value, bool requireWhitespace = false)
-        {
-            value = DateTime.MinValue;
-            int oldpointer = pointer;
-
-            string hour, minute, second = "";
-
-            //Parse hour
-            int counter = 0;
-            hour = ConsumeWhile(ref input, ref pointer, offset, length, (c) => {
-                counter += counter < 2 ? 1 : 0;
-                return counter <= 2 && Symbols.Digits.Contains(c);
-            }, false);
-
-            if (hour.Length > 0 && ConsumeKeyword(ref input, ref pointer, offset, length, ":", false))
-            {
-                //Parse minute
-                counter = 0;
-                minute = ConsumeWhile(ref input, ref pointer, offset, length, (c) => {
-                    counter += counter < 2 ? 1 : 0;
-                    return counter <= 2 && Symbols.Digits.Contains(c);
-                }, false);
-            }
-            else
-            {
-                pointer = oldpointer;
-                return false;
-            }
-
-            if (minute.Length == 0)
-            {
-                pointer = oldpointer;
-                return false;
-            }
-
-            if (ConsumeKeyword(ref input, ref pointer, offset, length, ":", false))
-            {
-                //Parse seconds
-                counter = 0;
-                second = ConsumeWhile(ref input, ref pointer, offset, length, (c) => {
-                    counter += counter < 2 ? 1 : 0;
-                    return counter <= 2 && Symbols.Digits.Contains(c);
-                }, false);
-            }
-
-            if (DateTime.TryParse($"{hour}:{minute}{(second.Length > 0 ? ":" + second : "")}", out value))
-                return true;
-            else
-            {
-                pointer = oldpointer;
-                return false;
-            }
-        }
-
-        private static bool ConsumeDate(ref string input, ref int pointer, int offset, int length, out DateTime value, bool requireWhitespace = false)
-        {
-            value = DateTime.MinValue;
-            int oldpointer = pointer;
-
-            string day, month, year = "";
-
-            //Parse day
-            int counter = 0;
-            day = ConsumeWhile(ref input, ref pointer, offset, length, (c) => {
-                counter += counter < 2 ? 1 : 0;
-                return counter <= 2 && Symbols.Digits.Contains(c);
-            }, false);
-
-            if (day.Length > 0 && ConsumeKeyword(ref input, ref pointer, offset, length, "/", false))
-            {
-                //Parse month
-                counter = 0;
-                month = ConsumeWhile(ref input, ref pointer, offset, length, (c) => {
-                    counter += counter < 2 ? 1 : 0;
-                    return counter <= 2 && Symbols.Digits.Contains(c);
-                }, false);
-            }
-            else
-            {
-                pointer = oldpointer;
-                return false;
-            }
-
-            if (month.Length == 0)
-            {
-                pointer = oldpointer;
-                return false;
-            }
-
-            if (ConsumeKeyword(ref input, ref pointer, offset, length, "/", false))
-            {
-                //Parse year
-                counter = 0;
-                year = ConsumeWhile(ref input, ref pointer, offset, length, (c) => {
-                    counter += counter < 4 ? 1 : 0;
-                    return counter <= 4 && Symbols.Digits.Contains(c);
-                }, false);
-            }
-
-            if (requireWhitespace && IsWhitespace(ref input, pointer, offset, length) || !requireWhitespace)
-            {
-                if (DateTime.TryParse($"{month}/{day}{(year.Length > 0 ? "/" + year : "")} 12:00 AM", out value))
-                    return true;
-                else
-                {
-                    pointer = oldpointer;
-                    return false;
-                }
-            }
             else
             {
                 pointer = oldpointer;
@@ -907,10 +786,6 @@ namespace SpecialityWebService.Generation
                 else
                     return new Token(f_val);
             }
-            else if (ConsumeDate(ref input, ref pointer, offset, length, out DateTime d_val, true))
-                return new Token(Primitive.Date, d_val);
-            else if (ConsumeTime(ref input, ref pointer, offset, length, out DateTime t_val, true))
-                return new Token(Primitive.Time, t_val);
             else if (ConsumeInteger(ref input, ref pointer, offset, length, out long i_val, false))
             {
                 if (BetweenSymbols(ref input, ref pointer, offset, length, out tmp, "(", ")", false))
@@ -985,8 +860,8 @@ namespace SpecialityWebService.Generation
 
         private static Dictionary<Operator, Func<IComparable, IComparable, bool>> _logicComparisonMap = new Dictionary<Operator, Func<IComparable, IComparable, bool>>()
         {
-            { Operator.LogicEqual, (left, right) => left.CompareTo(right) == 0 },
-            { Operator.LogicNotEqual, (left, right) => left.CompareTo(right) != 0 },
+            { Operator.LogicEqual, (left, right) => ((left is string && right is not string) || (right is string && left is not string)) ? false : left.CompareTo(right) == 0 },
+            { Operator.LogicNotEqual, (left, right) => ((left is string && right is not string) || (right is string && left is not string)) ? true : left.CompareTo(right) != 0 },
             { Operator.LogicLessThan, (left, right) => left.CompareTo(right) < 0 },
             { Operator.LogicLessThanOrEqual, (left, right) => left.CompareTo(right) <= 0 },
             { Operator.LogicGreaterThan, (left, right) => left.CompareTo(right) > 0 },
@@ -1024,6 +899,7 @@ namespace SpecialityWebService.Generation
             else
                 throw new RuntimeException("Descriped type did not match the value", token);
         }
+
 
         public static ReturnValue ExecuteExpression(string input, ref Dictionary<string, ColumnData> environment) => ExecuteExpression(Lexer.GetTokenExpression(input), ref environment);
 
@@ -1077,26 +953,24 @@ namespace SpecialityWebService.Generation
                         case Operator.LogicGreaterThanOrEqual:
                             ReturnValue left1 = ExecuteExpression(token.Tokens[0], ref environment);
                             ReturnValue right1 = ExecuteExpression(token.Tokens[1], ref environment);
-                            if (left1.Type == typeof(double) || right1.Type == typeof(double))
-                            {
+                            if (left1.Type == typeof(double))
                                 left1 = new ReturnValue(Convert.ToDouble(left1.Value), typeof(double));
-                                right1 = new ReturnValue(Convert.ToDouble(right1.Value), typeof(double));
-                            }
-                            else if (left1.Type == typeof(long) || right1.Type == typeof(long))
-                            {
+                            else if (left1.Type == typeof(long))
                                 left1 = new ReturnValue(Convert.ToInt64(left1.Value), typeof(long));
-                                right1 = new ReturnValue(Convert.ToInt64(right1.Value), typeof(long));
-                            }
-                            else if (left1.Type == typeof(bool) || right1.Type == typeof(bool))
-                            {
+                            else if (left1.Type == typeof(bool))
                                 left1 = new ReturnValue(Convert.ToBoolean(left1.Value), typeof(bool));
-                                right1 = new ReturnValue(Convert.ToBoolean(right1.Value), typeof(bool));
-                            }
                             else
-                            {
                                 left1 = new ReturnValue(Convert.ToString(left1.Value), typeof(string));
+
+                            if (right1.Type == typeof(double))
+                                right1 = new ReturnValue(Convert.ToDouble(right1.Value), typeof(double));
+                            else if (right1.Type == typeof(long))
+                                right1 = new ReturnValue(Convert.ToInt64(right1.Value), typeof(long));
+                            else if (right1.Type == typeof(bool))
+                                right1 = new ReturnValue(Convert.ToBoolean(right1.Value), typeof(bool));
+                            else
                                 right1 = new ReturnValue(Convert.ToString(right1.Value), typeof(string));
-                            }
+
                             if (left1.Value is IComparable l1 && right1.Value is IComparable r1)
                             {
                                 try { return new ReturnValue(_logicComparisonMap[token.Operation](l1, r1), typeof(bool)); }

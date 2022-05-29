@@ -55,16 +55,5 @@ namespace SpecialityWebService.Generation
         {
             _rtree.Clear();
         }
-
-
-        public T Read(BinaryReader br)
-        {
-            throw new NotImplementedException();
-        }
-
-        public T Write(BinaryWriter bw)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

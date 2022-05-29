@@ -15,72 +15,176 @@ namespace SpecialityWebService.Generation
         Both = 3
     }
 
-    public class Network : IFileItem<Network>
+    public class Network : IFileItem<Network>, IDisposable
     {
+        public const string NetworkFolder = @"Resources\Generated";
+        public string NetworkFileName => Name + ".network";
         public string Name { get; set; }
-        public IFileArray<Vertex> Vfile { get; set; }
-        public IFileArray<Edge> Efile { get; set; }
-        public List<Vertex> V { get; private set; }
-        public List<Edge> E { get; private set; }
+        public string DatasetName { get; set; }
+        public string SessionId { get; set; }
+
+        public VertexArray V { get; set; }
+        public EdgeArray E { get; set; }
 
         public int SelectedStartVertex { get; set; }
         public int SelectedEndVertex { get; set; }
-        public List<int> EdgesBetween { get; set; }
+        public bool ShouldOverrideStart { get; set; } = true;
+        public Dictionary<string, List<int>> EdgesBetween { get; set; }
 
-        public double EndPointTolerance { get; set; }
-        public double MidPointTolerance { get; set; }
-        public string DirectionColumn { get; set; }
-        public string DirectionForwardsValue { get; set; }
-        public string DirectionBackwardsValue { get; set; }
+        public double EndPointTolerance { get; set; } = 1.0;
+        public double MidPointTolerance { get; set; } = 1.0;
+        public string DirectionColumn { get; set; } = null;
+        public string DirectionForwardsValue { get; set; } = null;
+        public string DirectionBackwardsValue { get; set; } = null;
+        public string ProgressString => _generator != null ? string.Format(@"{0}: Step: {1}/{2} Progress: {3}/{4}", _generator.StepInfo, _generator.CurrentStep, _generator.TotalSteps, _generator.CurrentPath, _generator.TotalPaths) : "No generator associated";
+
+
         public Direction DefaultDirection { get; set; } = Direction.Both;
         public List<KeyValuePair<string, string>> Weights { get; set;  } = new List<KeyValuePair<string, string>>();
+        public List<string> WeightColumns => Weights.Select(w => Lexer.ExtractPrimitiveTokens(Lexer.Primitive.Variable, w.Value)).SelectMany(i => i).Select(token => (string)token.Value).ToList();
+        
+        public Generator Generator { get; set; } = Generator.Proposed;
 
-        private IQueryStructure<int> _Equery { get; set; }
-        private IQueryStructure<int> _Vquery { get; set; }
-        private INetworkGenerator _generator { get; set; }
+        public long GenerationTime { get; set; } = -1; 
+
+        private IQueryStructure<int> _Equery { get; set; } = null;
+        private IQueryStructure<int> _Vquery { get; set; } = null;
+        private INetworkGenerator _generator { get; set; } = null;
+
+        public bool HasGenerated = false;
+
+        public string StatusString { 
+            get {
+                StringBuilder sb = new StringBuilder();
+
+                if (_generator.IsGenerating)
+                    sb.AppendLine("Generating:").Append(ProgressString);
+                else
+                {
+                    sb.Append("Generation time: ").Append(GenerationTime).AppendLine("ms");
+                    sb.Append("|V|: ").AppendLine(V.Count.ToString());
+                    sb.Append("|E|: ").AppendLine(E.Count.ToString());
+                }
+                return sb.ToString();
+            } 
+        }
 
         public Tuple<double, int> ClosestEdge(Point p, double tolerance) => _Equery == null ? Tuple.Create(double.PositiveInfinity, -1) : _Equery.QueryClosest(p, tolerance);
 
         public Tuple<double, int> ClosestVertex(Point p, double tolerance) => _Vquery == null ? Tuple.Create(double.PositiveInfinity, -1) : _Vquery.QueryClosest(p, tolerance);
 
-        public Network(string name, INetworkGenerator generator)
+        public List<int> QueryVertices(Rectangle query) => _Vquery == null ? new List<int>() : _Vquery.Query(query);
+
+        public List<int> QueryEdges(Rectangle query) => _Equery == null ? new List<int>() : _Equery.Query(query);
+
+        private Network()
+        {
+        }
+        public Network(string name, string datasetname, string sessionid, Generator generator) : this(name, datasetname, sessionid, generator, new Rtree<int>(), new Rtree<int>()){}
+        public Network(string name, string datasetname, string sessionid, Generator generator, IQueryStructure<int> edgequerystructure, IQueryStructure<int> vertexquerystructure)
         {
             Name = name;
-            _generator = generator;
+            DatasetName = datasetname;
+            SessionId = sessionid;
+            Generator = generator;
+            switch (generator)
+            {
+                case Generator.Proposed:
+                    _generator = new ProposedAlgorithm();
+                    break;
+                case Generator.QGIS:
+                    _generator = new QGISReferenceAlgorithm();
+                    break;
+            };
+            InstanciateQueryStructures();
+        }
+
+        public void InstanciateQueryStructures()
+        {
+            V = new VertexArray(System.IO.Path.Combine(NetworkFolder, SessionId, DatasetName), Name);
+            E = new EdgeArray(System.IO.Path.Combine(NetworkFolder, SessionId, DatasetName), Name);
+
             _Equery = new Rtree<int>();
             _Vquery = new Rtree<int>();
+            int vcount = V.Count; //Do not execute every check (expensive)
+            for (int i = 0; i < vcount; i++)
+            {
+                Vertex v = V[i];
+                if (v != null)
+                    _Vquery.Insert(new IntEnvelop(i, v.BoundaryBox));
+            }
+
+            int ecount = E.Count; //Do not execute every check (expensive)
+            for (int i = 0; i < ecount; i++)
+            {
+                Edge e = E[i];
+                if (e != null)
+                    _Equery.Insert(new IntEnvelop(i, e.BoundaryBox));
+            }
         }
 
-        public Network(string name, INetworkGenerator generator, IQueryStructure<int> edgequerystructure, IQueryStructure<int> vertexquerystructure)
+        public Task Generate(Map map)
         {
-            Name = name;
-            _generator = generator;
-            _Equery = edgequerystructure;
-            _Vquery = vertexquerystructure;
+            if (string.IsNullOrEmpty(DirectionColumn))
+                return Generate(map.GML.GetPathEnumerator(Rectangle.Infinite(), WeightColumns));
+            else
+                return Generate(map.GML.GetPathEnumerator(Rectangle.Infinite(), WeightColumns.Append(DirectionColumn).ToList()));
         }
 
-        public void Generate(Map map)
+        public Task Generate(IEnumerable<Path> paths)
         {
-            List<string> extractionColumns = Weights.Select(w => Lexer.ExtractPrimitiveTokens(Lexer.Primitive.Variable, w.Value)).SelectMany(i => i).Select(token => (string)token.Value).ToList();
-            (V, E) = _generator.Generate(map.GML.GetPathEnumerator(Rectangle.Infinite(), extractionColumns), EndPointTolerance, MidPointTolerance, Weights, DirectionColumn, DirectionForwardsValue, DirectionBackwardsValue);
-            _Equery.Clear();
-            foreach (Edge e in E)
-                _Equery.Insert(new IntEnvelop(e));
-            _Vquery.Clear();
-            foreach (Vertex v in V)
-                _Vquery.Insert(new IntEnvelop(v));
+            return _generator.Generate(paths, EndPointTolerance, MidPointTolerance, Weights, DirectionColumn, DirectionForwardsValue, DirectionBackwardsValue).ContinueWith(res =>
+            {
+                (List<Vertex> V, List<Edge> E) = res.Result;
+                //this.V.AddRange(V);
+                //this.E.AddRange(E);
+                _Equery.Clear();
+                foreach (Edge e in E)
+                {
+                    this.E.Add(e);
+                    _Equery.Insert(new IntEnvelop(e));
+                }
+                _Vquery.Clear();
+                foreach (Vertex v in V)
+                {
+                    this.V.Add(v);
+                    _Vquery.Insert(new IntEnvelop(v));
+                }
+                GenerationTime = _generator.TimeElapsed;
+                HasGenerated = true;
+                Save();
+            });
         }
 
-        public void Generate(IEnumerable<Path> paths)
+        public void Save()
         {
-            List<string> extractionColumns = Weights.Select(w => Lexer.ExtractPrimitiveTokens(Lexer.Primitive.Variable, w.Value)).SelectMany(i => i).Select(token => (string)token.Value).ToList();
-            (V, E) = _generator.Generate(paths, EndPointTolerance, MidPointTolerance, Weights, DirectionColumn, DirectionForwardsValue, DirectionBackwardsValue);
-            _Equery.Clear();
-            foreach (Edge e in E)
-                _Equery.Insert(new IntEnvelop(e));
-            _Vquery.Clear();
-            foreach (Vertex v in V)
-                _Vquery.Insert(new IntEnvelop(v));
+            Directory.CreateDirectory(NetworkFolder);
+            Directory.CreateDirectory(System.IO.Path.Combine(NetworkFolder, SessionId, DatasetName));
+            string filepath = System.IO.Path.Combine(NetworkFolder, SessionId, DatasetName, NetworkFileName);
+            if (File.Exists(filepath))
+                File.Delete(filepath);
+            using (BinaryWriter bw = new BinaryWriter(new FileStream(filepath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None)))
+            {
+                this.Write(bw);
+                bw.Close();
+                bw.Dispose();
+            }
+        }
+
+        public static Network Load(string filepath)
+        {
+            Network network = new Network();
+            if (File.Exists(filepath))
+            {
+                using (BinaryReader br = new BinaryReader(new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.None)))
+                {
+                    network.Read(br);
+                    network.InstanciateQueryStructures();
+                    br.Close();
+                    br.Dispose();
+                }
+            }
+            return network;
         }
 
         internal class DijkstraNode
@@ -101,7 +205,7 @@ namespace SpecialityWebService.Generation
             Vertex start = V[startvert];
             Vertex end = V[endvert];
 
-            var heap = new DynamicMinHeap<DijkstraNode>(512);
+            var heap = new DynamicMinHeap<DijkstraNode>(1024); //Instanciate with some size to not cause too many small dynamic reallocations
 
             //Keeps account of the current shortest path to the vertex (key) and which edge (item1) to traverse
             var knownVertices = new Dictionary<int, Tuple<int, double>>();
@@ -162,16 +266,93 @@ namespace SpecialityWebService.Generation
             return path.ToList();
         }
 
-        public List<Edge> FindDijkstraPath(Vertex startvert, Vertex endvert, string weightname) => FindDijkstraPath(startvert.Index, endvert.Index, weightname).Select(e => E[e]).ToList();
-
-        public Network Read(BinaryReader br)
+        public List<Edge> FindDijkstraPath(Vertex startvert, Vertex endvert, string weightname)
         {
-            throw new NotImplementedException();
+            if (startvert == null || endvert == null)
+                return new List<Edge>();
+            return FindDijkstraPath(startvert.Index, endvert.Index, weightname).Select(e => E[e]).ToList();
         }
 
-        public Network Write(BinaryWriter bw)
+        public static Network FromReader(BinaryReader br) => FromReader(br, new Rtree<int>(), new Rtree<int>());
+        public static Network FromReader(BinaryReader br, IQueryStructure<int> vquery, IQueryStructure<int> equery)
         {
-            throw new NotImplementedException();
+            Network network = new Network();
+            network.Read(br);
+            network._Equery = equery;
+            network._Vquery = vquery;
+            network.InstanciateQueryStructures();
+            return network;
+        }
+
+        public void Read(BinaryReader br)
+        {
+            Name = br.ReadString();
+            DatasetName = br.ReadString();
+            SessionId = br.ReadString();
+            EndPointTolerance = br.ReadDouble();
+            MidPointTolerance = br.ReadDouble();
+            DirectionColumn = br.ReadString();
+            DirectionColumn = string.IsNullOrEmpty(DirectionColumn) ? null : DirectionColumn;
+            DirectionForwardsValue = br.ReadString();
+            DirectionForwardsValue = string.IsNullOrEmpty(DirectionForwardsValue) ? null : DirectionForwardsValue;
+            DirectionBackwardsValue = br.ReadString();
+            DirectionBackwardsValue = string.IsNullOrEmpty(DirectionBackwardsValue) ? null : DirectionBackwardsValue;
+            int b1 = br.ReadInt32();
+            DefaultDirection = (Direction)b1;
+            int i1 = br.ReadInt32();
+            Weights = new List<KeyValuePair<string, string>>();
+            int wcount = i1;
+            for (int i = 0; i < wcount; i++)
+            {
+                string label = br.ReadString();
+                string formula = br.ReadString();
+                Weights.Add(KeyValuePair.Create(label, formula));
+            }
+            Generator gen = (Generator)br.ReadInt32();
+            switch (gen)
+            {
+                case Generator.Proposed:
+                    _generator = new ProposedAlgorithm();
+                    break;
+                case Generator.QGIS:
+                    _generator = new QGISReferenceAlgorithm();
+                    break;
+            };
+            HasGenerated = br.ReadBoolean();
+            GenerationTime = br.ReadInt64();
+            InstanciateQueryStructures();
+        }
+
+        public void Write(BinaryWriter bw)
+        {
+            bw.Write(Name);
+            bw.Write(DatasetName);
+            bw.Write(SessionId);
+            bw.Write(BitConverter.GetBytes(EndPointTolerance));
+            bw.Write(BitConverter.GetBytes(MidPointTolerance));
+            bw.Write(DirectionColumn ?? "");
+            bw.Write(DirectionForwardsValue ?? "");
+            bw.Write(DirectionBackwardsValue ?? "");
+            int direct = (int)DefaultDirection;
+            bw.Write(BitConverter.GetBytes(direct));
+            int wcount = Weights.Count;
+            bw.Write(BitConverter.GetBytes(wcount));
+            foreach (KeyValuePair<string, string> w in Weights)
+            {
+                bw.Write(w.Key);
+                bw.Write(w.Value);
+            }
+            Generator g = _generator == null ? Generator.Proposed : (_generator is QGISReferenceAlgorithm ? Generator.QGIS : Generator.Proposed);
+            int gen = (int)g;
+            bw.Write(BitConverter.GetBytes(gen));
+            bw.Write(BitConverter.GetBytes(HasGenerated));
+            bw.Write(BitConverter.GetBytes(GenerationTime));
+        }
+
+        public void Dispose()
+        {
+            V.Dispose();
+            E.Dispose();
         }
     }
     public class DynamicMinHeap<T>

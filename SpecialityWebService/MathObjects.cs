@@ -1,19 +1,22 @@
 ﻿using RBush;
+using SpecialityWebService.Generation;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 
 namespace SpecialityWebService
 {
     public class MathObjects
     {
-        public struct Point
+        public struct Point : IFileItem<Point>
         {
             public double X, Y;
             public Point(double x, double y) { X = x; Y = y; }
 
             public static Point operator +(Point me, Point other) => new Point(me.X + other.X, me.Y + other.Y);
             public static Point operator -(Point me, Point other) => new Point(me.X - other.X, me.Y - other.Y);
+            public static Point operator *(double s, Point other) => new Point(s * other.X, s * other.Y);
 
             public static bool operator ==(Point left, Point right) => left.X == right.X && left.Y == right.Y;
             public static bool operator !=(Point left, Point right) => left.X != right.X || left.Y != right.Y;
@@ -28,12 +31,33 @@ namespace SpecialityWebService
             {
                 return $"({X.ToString(CultureInfo.InvariantCulture)},{Y.ToString(CultureInfo.InvariantCulture)})";
             }
+
+            public static Point FromReader(BinaryReader br)
+            {
+                Point p = new Point(0, 0);
+                p.Read(br);
+                return p;
+            }
+
+            public void Read(BinaryReader br)
+            {
+                X = BitConverter.ToDouble(br.ReadBytes(8));
+                Y = BitConverter.ToDouble(br.ReadBytes(8));
+            }
+
+            public void Write(BinaryWriter bw)
+            {
+                bw.Write(BitConverter.GetBytes(X));
+                bw.Write(BitConverter.GetBytes(Y));
+            }
         }
 
-        public struct Rectangle
+        public struct Rectangle : IFileItem<Rectangle>
         {
             public double MinX, MinY, MaxX, MaxY;
+            public Rectangle(Point center, double inflate) : this(center.X, center.Y, inflate, inflate) { }
             public Rectangle(double centerX, double centerY, double inflate) : this(centerX, centerY, inflate, inflate) { }
+            public Rectangle(Point center, double inflateX, double inflateY) : this(center.X, center.Y, inflateX, inflateY) { }
             public Rectangle(double centerX, double centerY, double inflateX, double inflateY)
             {
                 MinX = centerX - inflateX;
@@ -61,10 +85,15 @@ namespace SpecialityWebService
             public double Bottom => MinY;
 
 
-            public Point LeftTop => new Point(MinX, MaxX);
-            public Point RightTop => new Point(MaxX, MaxX);
-            public Point LeftBottom => new Point(MinX, MinX);
-            public Point RightBottom => new Point(MaxX, MinX);
+            public Point LeftTop => new Point(MinX, MaxY);
+            public Point RightTop => new Point(MaxX, MaxY);
+            public Point LeftBottom => new Point(MinX, MinY);
+            public Point RightBottom => new Point(MaxX, MinY);
+
+            public Point Center => new Point(MinX + (MaxX - MinX) / 2.0, MinY + (MaxY - MinY) / 2.0);
+
+            public Region HorizontalRegion => new Region(MinX, MaxX);
+            public Region VerticalRegion => new Region(MinY, MaxY);
 
 
             public static Rectangle Zero() => Rectangle.FromLTRB(0.0, 0.0, 0.0, 0.0);
@@ -91,7 +120,6 @@ namespace SpecialityWebService
                 return -1.0; //Should not be reached
             }
 
-            public Point GetCenter() => new Point(MinX + (MaxX - MinX) / 2.0, MinY + (MaxY - MinY) / 2.0);
 
             public bool Overlapping(Rectangle other) => !(this.Right < other.Left || this.Left > other.Right || this.Bottom > other.Top || this.Top < other.Bottom);
 
@@ -104,6 +132,9 @@ namespace SpecialityWebService
                 MinY -= halfh;
                 MaxY += halfh;
             }
+
+            public Rectangle Union(Rectangle other) =>
+                Rectangle.FromLTRB(Math.Min(this.MinX, other.MinX), Math.Max(this.MaxY, other.MaxY), Math.Max(this.MaxX, other.MaxX), Math.Min(this.MinY, other.MinY));
 
             public override string ToString()
             {
@@ -123,6 +154,29 @@ namespace SpecialityWebService
                 return Rectangle.FromLTRB(minx, maxy, maxx, miny);
             }
 
+            public static Rectangle FromReader(BinaryReader br)
+            {
+                Rectangle rect = Rectangle.Zero();
+                rect.Read(br);
+                return rect;
+            } 
+
+            public void Read(BinaryReader br)
+            {
+                MinX = br.ReadDouble();
+                MinY = br.ReadDouble();
+                MaxX = br.ReadDouble();
+                MaxY = br.ReadDouble();
+            }
+
+            public void Write(BinaryWriter bw)
+            {
+                bw.Write(BitConverter.GetBytes(MinX));
+                bw.Write(BitConverter.GetBytes(MinY));
+                bw.Write(BitConverter.GetBytes(MaxX));
+                bw.Write(BitConverter.GetBytes(MaxY));
+            }
+
             public static implicit operator Envelope(Rectangle rectangle) => new Envelope(rectangle.MinX, rectangle.MinY, rectangle.MaxX, rectangle.MaxY);
 
             public static implicit operator Rectangle(Envelope envelope) => Rectangle.FromLTRB(envelope.MinX, envelope.MaxY, envelope.MaxX, envelope.MinY);
@@ -130,23 +184,45 @@ namespace SpecialityWebService
 
         public struct Region
         {
-            public double Left, Right, Width, Mid;
+            private double _left, _right;
+            public double Left { 
+                get { return _left; } 
+                set { 
+                    _left = value;
+                    Mid = _left + (_right - _left) / 2.0;
+                    Width = _right - _left;
+                }
+            }
+            public double Right
+            {
+                get { return _right; }
+                set
+                {
+                    _right = value;
+                    Mid = _left + (_right - _left) / 2.0;
+                    Width = _right - _left;
+                }
+            }
+            public double Width { get; private set; }
+            public double Mid { get; private set; }
             public Region(double left, double right)
             {
-                Left = left;
-                Right = right;
+                _left = left;
+                _right = right;
                 Width = right - left;
                 Mid = left + Width / 2.0;
             }
 
             public bool Intersects(Region other) => Intersects(other.Left, other.Right);
-            public bool Intersects(double left, double right) => !(this.Right < left || this.Left > right);
+            public bool Intersects(double left, double right) => !(this.Right < left || this.Left > right); //this.Right >= left && this.Left <= right
             public bool IntersectsBiased(Region other) => IntersectsBiased(other.Left, other.Right);
-            public bool IntersectsBiased(double left, double right) => !(this.Right < left || this.Left >= right);
-            public bool Subset(Region other) => Subset(other.Left, other.Right);
-            public bool Subset(double left, double right) => !(this.Left < left || this.Right > right);
-            public bool SubsetBiased(Region other) => SubsetBiased(other.Left, other.Right);
-            public bool SubsetBiased(double left, double right) => !(this.Left < left || this.Right > right);
+            public bool IntersectsBiased(double left, double right) => !(this.Right < left || this.Left >= right); //this.Right >= left && this.Left < right
+            public bool SubsetOf(Region other) => SubsetOf(other.Left, other.Right);
+            public bool SubsetOf(double left, double right) => !(this.Left < left || this.Right > right); // this.Left >= left && this.Right <= right
+            public bool SubsetOfBiased(Region other) => SubsetOfBiased(other.Left, other.Right);
+            public bool SubsetOfBiased(double left, double right) => !(this.Left < left || this.Right >= right); // this.Left >= left && this.Right < right
+            public bool Contains(double val) => Intersects(val, val);
+            public bool ContainsBiased(double val) => IntersectsBiased(val, val);
         }
     }
 }

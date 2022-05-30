@@ -197,6 +197,7 @@ namespace SpecialityWebService.Controllers
                 return Content("");
             }
 
+            ResetTimer(usertoken);
             Network network = maps[usertoken].Item2.Networks[preset];
             maps[usertoken].Item2.RenderDataset = false;
             maps[usertoken].Item2.SelectedNetwork = preset;
@@ -212,7 +213,7 @@ namespace SpecialityWebService.Controllers
                 .Append(network.DirectionBackwardsValue);
             foreach (KeyValuePair<string, string> w in network.Weights) {
                 sb.Append(",").Append(w.Key);
-                sb.Append(",").Append(w.Value);
+                sb.Append(",").Append(WebUtility.UrlEncode(w.Value.Replace("+", "]")));
             }
 
             return Content(sb.ToString());
@@ -227,6 +228,7 @@ namespace SpecialityWebService.Controllers
                 return Content("");
             }
 
+            ResetTimer(usertoken);
             if (maps[usertoken].Item2.Networks.ContainsKey(maps[usertoken].Item2.SelectedNetwork))
             {
                 HttpContext.Response.StatusCode = 200;
@@ -253,6 +255,7 @@ namespace SpecialityWebService.Controllers
                 validvariables = dfvalidcolumns;
             else validvariables = vmvalidcolumns;
 
+            ResetTimer(usertoken);
             HttpContext.Response.StatusCode = 200;
             try
             {
@@ -273,6 +276,8 @@ namespace SpecialityWebService.Controllers
             }
             catch(ParseException pex)
             {
+                System.Diagnostics.Debug.WriteLine(pex.ToString());
+                System.Diagnostics.Debug.WriteLine(pex.StackTrace);
                 return Content(pex.ToString());
             }
             catch(RuntimeException rex)
@@ -493,7 +498,7 @@ namespace SpecialityWebService.Controllers
                 network.DirectionForwardsValue = forwardsval;
                 network.DirectionBackwardsValue = backwardsval;
                 network.Weights = new List<KeyValuePair<string, string>>();
-                string[] weightssplit = weights.Split(";");
+                string[] weightssplit = WebUtility.UrlDecode(weights.Replace("]", "+")).Split(";");
                 foreach(string weightsplit in weightssplit)
                 {
                     string[] labelformula = weightsplit.Split(",");
@@ -505,16 +510,19 @@ namespace SpecialityWebService.Controllers
 
                 maps[usertoken].Item2.Networks[network.Name] = network;
 
-                network.Generate(maps[usertoken].Item2);
+                try
+                {
+                    await network.Generate(maps[usertoken].Item2);
+                }
+                catch(RuntimeException rex)
+                {
+                    System.Diagnostics.Debug.WriteLine(rex.ToString());
+                    System.Diagnostics.Debug.WriteLine(rex.StackTrace.ToString());
+                    HttpContext.Response.StatusCode = 400;
+                }
 
                 maps[usertoken].Item2.SelectedNetwork = network.Name;
 
-                StringBuilder sb = new StringBuilder();
-                sb.AppendLine($"Generation time elapsed: {network.GenerationTime}ms");
-                sb.AppendLine($"Original complexity: |V_paths| = {maps[usertoken].Item2.GML.GetFeatureCount()}");
-                sb.AppendLine($"Network complexity: |V| = {network.V.Count}, |E| = {network.E.Count}");
-                System.Diagnostics.Debug.WriteLine(sb.ToString());
-                HttpContext.Response.Headers.Add("networkstats", new StringValues(System.Net.WebUtility.UrlEncode(sb.ToString())));
                 ResetTimer(usertoken);
             }
             else

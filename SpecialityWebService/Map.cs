@@ -273,7 +273,7 @@ namespace SpecialityWebService
                             prevp = p;
                             firstpoint = false;
                         }
-                         g.DrawLine(_edgepen, Camera.ToScreenF(e.RenderPoints.First()), Camera.ToScreenF(e.RenderPoints.Last()));
+                        g.DrawLine(_edgepen, Camera.ToScreenF(e.RenderPoints.First()), Camera.ToScreenF(e.RenderPoints.Last()));
 
                         //g.DrawLines(_edgeghostpen, e.RenderPoints.Select(p => Camera.ToScreenF(p)).ToArray());
                         g.Flush();
@@ -292,6 +292,12 @@ namespace SpecialityWebService
                                 var _networkhighlightpen = new System.Drawing.Pen(_pathhighlightcolors[i % 3]);
                                 _networkhighlightpen.Width = _edgepen.Width + (8 - i * 4);
                                 g.DrawLines(_networkhighlightpen, e.RenderPoints.Select(p => Camera.ToScreenF(p)).ToArray());
+
+                                int circlewidth = vertexsize + network.V[e.V2].Edges.Count * vertexsizestep;
+                                var location = Camera.ToScreenF(e.RenderPoints.Last());
+                                location.X -= circlewidth / 2;
+                                location.Y -= circlewidth / 2;
+                                g.FillEllipse(new System.Drawing.SolidBrush(_pathhighlightcolors[i % 3]), new System.Drawing.RectangleF(location, new System.Drawing.SizeF(circlewidth, circlewidth)));
                                 g.Flush();
                             }
                             i++;
@@ -311,17 +317,15 @@ namespace SpecialityWebService
                         location.X -= circlewidth / 2;
                         location.Y -= circlewidth / 2;
 
-                        var color = _vertexstrokecolor;
-                        int i = 0;
+                        if (scale > 2500)
+                            continue;
+
                         foreach (KeyValuePair<string, List<int>> path in network.EdgesBetween ?? new Dictionary<string, List<int>>())
                         {
                             if (v.Edges.Any(eid => path.Value.Contains(eid)))
-                            {
-                                color = _pathhighlightcolors[i % 3];
-                                i++;
-                            }
+                                continue;
                         }
-                        color = v.Index == network.SelectedStartVertex || v.Index == network.SelectedEndVertex ? _networkhighlightcolor : color;
+                        var color = v.Index == network.SelectedStartVertex || v.Index == network.SelectedEndVertex ? _networkhighlightcolor : _vertexstrokecolor;
 
                         g.FillEllipse(new System.Drawing.SolidBrush(color), new System.Drawing.RectangleF(location, new System.Drawing.SizeF(circlewidth, circlewidth)));
                         if (rendercount > renderthreshold)

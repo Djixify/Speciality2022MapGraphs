@@ -137,6 +137,8 @@ namespace SpecialityWebService.Generation
                 }
                 catch(Exception ex)
                 {
+                    System.Diagnostics.Debug.WriteLine(ex.ToString());
+                    System.Diagnostics.Debug.WriteLine(ex.StackTrace.ToString());
                     return (new List<Vertex>(), new List<Edge>());
                 }
             }, ct).WaitAsync(ct);

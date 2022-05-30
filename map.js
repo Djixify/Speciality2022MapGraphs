@@ -234,15 +234,15 @@ function changedPreset(){
                 $('#directionbackward').val(splits[6])
                 if (splits.length >= 9) {
                     $('#weightlabel1').val(splits[7])
-                    $('#weightformula1').val(splits[8])
+                    $('#weightformula1').val(decodeURIComponent(splits[8]).replaceAll("]","+"))
                 }
                 if (splits.length >= 11) {
                     $('#weightlabel2').val(splits[9])
-                    $('#weightformula2').val(splits[10])
+                    $('#weightformula2').val(decodeURIComponent(splits[10]).replaceAll("]","+"))
                 }
                 if (splits.length == 13) {
                     $('#weightlabel3').val(splits[11])
-                    $('#weightformula3').val(splits[12])
+                    $('#weightformula3').val(decodeURIComponent(splits[12]).replaceAll("]","+"))
                 }
                 updateNetworkstats()
             })
@@ -400,7 +400,7 @@ async function generateclicked() {
         var response = await fetch(server + "/Map/" + sessiontoken + "/validateformula='" + encodeURIComponent(formula1.replaceAll("+", "]")) + "'", getrequestsettings)
         var text = await response.text()
         if (text.startsWith("Success parsing:")) {
-            weights = weights + ";" + label1 + "," + formula1
+            weights = weights + ";" + label1 + "," + encodeURIComponent(formula1.replaceAll("+", "]"))
         }
         else{
             $('#networksettingtext').css('color', 'red');
@@ -413,7 +413,7 @@ async function generateclicked() {
         var response = await fetch(server + "/Map/" + sessiontoken + "/validateformula='" + encodeURIComponent(formula2.replaceAll("+", "]")) + "'", getrequestsettings)
         var text = await response.text()
         if (text.startsWith("Success parsing:")) {
-            weights = weights + ";" + label2 + "," + formula2
+            weights = weights + ";" + label2 + "," + encodeURIComponent(formula2.replaceAll("+", "]"))
         }
         else{
             $('#networksettingtext').css('color', 'red');
@@ -426,7 +426,7 @@ async function generateclicked() {
         var response = await fetch(server + "/Map/" + sessiontoken + "/validateformula='" + encodeURIComponent(formula3.replaceAll("+", "]"))  + "'", getrequestsettings)
         var text = await response.text()
         if (text.startsWith("Success parsing:")) {
-            weights = weights + ";" + label3 + "," + formula3
+            weights = weights + ";" + label3 + "," + encodeURIComponent(formula3.replaceAll("+", "]"))
         }
         else{
             $('#networksettingtext').css('color', 'red');
@@ -448,13 +448,20 @@ async function generateclicked() {
         url = server + "/Map/" + sessiontoken + "/generatenetwork/" + generator + "/name=" + name + ";endpointtolerance=" + endpointradius + ";midpointtolerance=" + midpointradius + ";directioncolumn=" + directioncol + ",forwardsval=" + directionforward + ",backwardsval=" + directionbackward + ";weights=" + weights;
     }
     // /Map/testuser/generatenetwork/QGIS/name=Testnetwork;endpointtolerance=2.5;midpointtolerance=2.5;directioncolumn=dawd,forwardsval=wadwa,backwardsval=awd;weights=hello%2Cworld
-    
-    fetch(url, postrequestsettings).then(async response => {
-        $('#networksettingtext').css('color', 'green');
-        $('#networksettingtext').text("Network generated!")
+    console.log("Generating network using parameters: " + url);
+     fetch(url, postrequestsettings).then(async response => {
+        if (response.status == 404) {
+            $('#networksettingtext').css('color', 'red');
+            $('#networksettingtext').text("Url could not be generated for webservice")
+        }
+        else {
+            $('#networksettingtext').css('color', 'green');
+            $('#networksettingtext').text("Network generated!")
+            updateExistingNetworks(name)
+        }
     }).catch(async response => {
         console.log("Failed network generation successfully")
-    }).finally(() => updateExistingNetworks(name))
+    })
 }
 
 function validateFormula(formulainput) {

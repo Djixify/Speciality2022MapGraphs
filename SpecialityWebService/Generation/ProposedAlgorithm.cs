@@ -37,6 +37,7 @@ namespace SpecialityWebService.Generation
             return Task.Run(() => 
             {
                 Stopwatch sw = new Stopwatch();
+                sw.Restart();
                 IsGenerating = true;
                 TotalSteps = 2;
                 CurrentStep = 1;
@@ -49,13 +50,12 @@ namespace SpecialityWebService.Generation
                 int edgeid = 0;
 
                 RedBlackRangeTree2D<int> rangetree = new RedBlackRangeTree2D<int>();
-                List<List<int>> pathlookups = new List<List<int>>();
+                int[] pathlookups = new int[paths.Aggregate(0, (acc, path) => acc + path.Points.Count)];
 
-                int pathcount = 0;
+                int path2vert = 0;
                 foreach (Path path in paths)
                 {
                     ct.ThrowIfCancellationRequested();
-                    pathlookups.Add(new List<int>());
                     int pointcount = 0;
                     foreach (Point p in path.Points)
                     {
@@ -68,17 +68,17 @@ namespace SpecialityWebService.Generation
                         {
                             rangetree.Insert(new IntEnvelop(v));
                             V.Add(v);
-                            pathlookups[pathcount].Add(vertexid);
+                            pathlookups[path2vert] = vertexid;
                             vertexid++;
                         }
                         else
                         {
                             V[ext_p].IsEndpoint |= v.IsEndpoint;
-                            pathlookups[pathcount].Add(ext_p);
+                            pathlookups[path2vert] = ext_p;
                         }
+                        path2vert++;
                         pointcount++;
                     }
-                    pathcount++;
                     CurrentPath++;
                 }
 
@@ -86,19 +86,18 @@ namespace SpecialityWebService.Generation
                 CurrentPath = 1;
                 StepInfo = "Adding edges based on Range-tree vertices";
                 List<Edge> E = new List<Edge>();
-                pathcount = 0;
+                path2vert = 0;
                 foreach (Path path in paths)
                 {
                     ct.ThrowIfCancellationRequested();
                     Vertex pt1 = null, pt2 = null;
                     bool isFirstPoint1 = true;
-                    int pointcount = 0;
                     foreach (Point p in path.Points)
                     {
                         //int pt2index = pathlookups[pathcount][pointcount];
-                        pt2 = V[pathlookups[pathcount][pointcount]];
+                        pt2 = V[pathlookups[path2vert]];
                         //pt2 = V[rangetree.QueryClosest(p, endpointtolerance).Item2];
-                        if (!isFirstPoint1 && pathlookups[pathcount][pointcount] != pathlookups[pathcount][pointcount - 1]) //Same vertex, do not care
+                        if (!isFirstPoint1 && pathlookups[path2vert] != pathlookups[path2vert - 1]) //Same vertex, do not care
                         {
                             //int pt1index = pathlookups[pathcount][pointcount - 1];
                             List<KeyValuePair<double, Vertex>> orderedvertices = new List<KeyValuePair<double, Vertex>>() { KeyValuePair.Create(0.0, pt1), KeyValuePair.Create(pt2.Location.Distance(pt1.Location), pt2) };
@@ -159,9 +158,8 @@ namespace SpecialityWebService.Generation
                         }
                         pt1 = pt2;
                         isFirstPoint1 = false;
-                        pointcount++;
+                        path2vert++;
                     }
-                    pathcount++;
                     CurrentPath++;
                 }
                 sw.Stop();

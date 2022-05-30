@@ -348,7 +348,7 @@ namespace SpecialityWebService.Generation
         public static Token GetTokenExpression(string input)
         {
             int pointer = 0;
-            Token token = E1(ref input, ref pointer, 0, input.Length);
+            Token token = E3(ref input, ref pointer, 0, input.Length);
             if (pointer < input.Length)
             {
                 Tuple<string, int, int, int> tuple = GetRowCol(ref input, 0, pointer);
@@ -600,7 +600,7 @@ namespace SpecialityWebService.Generation
                 return false;
             }
 
-            if (requireWhitespace && IsWhitespace(ref input, pointer, offset, length) || !requireWhitespace)
+            if ((requireWhitespace && IsWhitespace(ref input, pointer, offset, length) || !requireWhitespace))
             {
                 pointer++;
                 value = value1.Substring(0, value1.Length - right.Length + 1);
@@ -635,6 +635,7 @@ namespace SpecialityWebService.Generation
             return arguments.Count > 0;
         }
 
+        /*
         private static Token E1(ref string input, ref int pointer, int offset, int length)
         {
             Token left = E2(ref input, ref pointer, offset, length);
@@ -671,24 +672,51 @@ namespace SpecialityWebService.Generation
                 return (Token left) => f(new Token(Operator.LogicAnd, new List<Token>() { left, right }));
             }
             return (Token t) => t;
-        }
+        }*/
 
         private static Token E3(ref string input, ref int pointer, int offset, int length)
         {
             Token left = E4(ref input, ref pointer, offset, length);
             SkipWhitespace(ref input, ref pointer, offset, length);
-            if (ConsumeKeyword(ref input, ref pointer, offset, length, _operatorMap[Operator.LogicEqual], false))
-                return new Token(Operator.LogicEqual, new List<Token>() { left, E3(ref input, ref pointer, offset, length) });
-            else if (ConsumeKeyword(ref input, ref pointer, offset, length, _operatorMap[Operator.LogicNotEqual], false))
-                return new Token(Operator.LogicNotEqual, new List<Token>() { left, E3(ref input, ref pointer, offset, length) });
-            else if (ConsumeKeyword(ref input, ref pointer, offset, length, _operatorMap[Operator.LogicLessThan], false))
-                return new Token(Operator.LogicLessThan, new List<Token>() { left, E3(ref input, ref pointer, offset, length) });
-            else if (ConsumeKeyword(ref input, ref pointer, offset, length, _operatorMap[Operator.LogicLessThanOrEqual], false))
-                return new Token(Operator.LogicLessThanOrEqual, new List<Token>() { left, E3(ref input, ref pointer, offset, length) });
-            else if (ConsumeKeyword(ref input, ref pointer, offset, length, _operatorMap[Operator.LogicGreaterThan], false))
-                return new Token(Operator.LogicGreaterThan, new List<Token>() { left, E3(ref input, ref pointer, offset, length) });
-            else if (ConsumeKeyword(ref input, ref pointer, offset, length, _operatorMap[Operator.LogicGreaterThanOrEqual], false))
-                return new Token(Operator.LogicGreaterThanOrEqual, new List<Token>() { left, E3(ref input, ref pointer, offset, length) });
+            bool found;
+            Operator op = Operator.LogicEqual;
+            if (found = ConsumeKeyword(ref input, ref pointer, offset, length, _operatorMap[Operator.LogicEqual], false))
+                op = Operator.LogicEqual;
+            else if (found = ConsumeKeyword(ref input, ref pointer, offset, length, _operatorMap[Operator.LogicNotEqual], false))
+                op = Operator.LogicNotEqual;
+            else if (found = ConsumeKeyword(ref input, ref pointer, offset, length, _operatorMap[Operator.LogicLessThan], false))
+                op = Operator.LogicLessThan;
+            else if (found = ConsumeKeyword(ref input, ref pointer, offset, length, _operatorMap[Operator.LogicLessThanOrEqual], false))
+                op = Operator.LogicLessThanOrEqual;
+            else if (found = ConsumeKeyword(ref input, ref pointer, offset, length, _operatorMap[Operator.LogicGreaterThan], false))
+                op = Operator.LogicGreaterThan;
+            else if (found = ConsumeKeyword(ref input, ref pointer, offset, length, _operatorMap[Operator.LogicGreaterThanOrEqual], false))
+                op = Operator.LogicGreaterThanOrEqual;
+            /*
+            if (found)
+            {
+                Token right = E3(ref input, ref pointer, offset, length);
+                return new Token(op, new List<Token>() { left, right});
+
+            }
+            else return left;*/
+            if (found)
+            {
+                Token right = E3(ref input, ref pointer, offset, length);
+                if (ConsumeKeyword(ref input, ref pointer, offset, length, "?", false))
+                {
+                    Token truebranch = E4(ref input, ref pointer, offset, length);
+                    if (ConsumeKeyword(ref input, ref pointer, offset, length, ":", false))
+                    {
+                        Token falsebranch = E4(ref input, ref pointer, offset, length);
+                        return new Token(op, new List<Token>() { left, right, truebranch, falsebranch });
+                    }
+                }
+                else
+                {
+                    return new Token(op, new List<Token>() { left, right });
+                }
+            }
             return left;
         }
 
@@ -774,14 +802,20 @@ namespace SpecialityWebService.Generation
             if (BetweenSymbols(ref input, ref pointer, offset, length, out tmp, "(", ")", false))
             {
                 int pointer2 = 0;
-                return E1(ref input, ref pointer2, pointer - 1 - tmp.Length, tmp.Length);
+                return E3(ref tmp, ref pointer2, 0, tmp.Length);
+
+                //int pointer2 = 0;
+                //return E1(ref tmp, ref pointer2, 0, tmp.Length);
+
+                //int pointer2 = 0;
+                //return E1(ref input, ref pointer2, pointer - 1 - tmp.Length, tmp.Length);
             }
             else if (ConsumeFloat(ref input, ref pointer, offset, length, out double f_val, false))
             {
                 if (BetweenSymbols(ref input, ref pointer, offset, length, out tmp, "(", ")", false))
                 {
                     int pointer2 = 0;
-                    return new Token(Operator.ArithmeticMultiply, new List<Token>() { new Token(f_val), E1(ref input, ref pointer2, pointer - 1 - tmp.Length + offset, tmp.Length) });
+                    return new Token(Operator.ArithmeticMultiply, new List<Token>() { new Token(f_val), E3(ref input, ref pointer2, pointer - 1 - tmp.Length + offset, tmp.Length) });
                 }
                 else
                     return new Token(f_val);
@@ -791,7 +825,7 @@ namespace SpecialityWebService.Generation
                 if (BetweenSymbols(ref input, ref pointer, offset, length, out tmp, "(", ")", false))
                 {
                     int pointer2 = 0;
-                    return new Token(Operator.ArithmeticMultiply, new List<Token>() { new Token(i_val), E1(ref input, ref pointer2, pointer - 1 - tmp.Length + offset, tmp.Length) });
+                    return new Token(Operator.ArithmeticMultiply, new List<Token>() { new Token(i_val), E3(ref input, ref pointer2, pointer - 1 - tmp.Length + offset, tmp.Length) });
                 }
                 else
                     return new Token(i_val);
@@ -819,7 +853,7 @@ namespace SpecialityWebService.Generation
                     {
                         int pointer2 = 0;
                         bool nonzero = ConsumeArguments(ref tmp, ref pointer2, 0, tmp.Length, ",", out List<string> arguments);
-                        return new Token((Operator)i, arguments.Select(arg => { int p = 0; return E1(ref arg, ref p, 0, arg.Length); }).ToList());
+                        return new Token((Operator)i, arguments.Select(arg => { int p = 0; return E3(ref arg, ref p, 0, arg.Length); }).ToList());
                     }
                 }
             }
@@ -850,7 +884,7 @@ namespace SpecialityWebService.Generation
         public struct ColumnData
         {
             public string Value;
-            public ColumnData(string value, string defaultvalue = "NULL")
+            public ColumnData(string value, string defaultvalue = "0")
             {
                 Value = string.IsNullOrEmpty(value) ? defaultvalue : value;
             }
@@ -973,7 +1007,12 @@ namespace SpecialityWebService.Generation
 
                             if (left1.Value is IComparable l1 && right1.Value is IComparable r1)
                             {
-                                try { return new ReturnValue(_logicComparisonMap[token.Operation](l1, r1), typeof(bool)); }
+                                try { 
+                                    if (token.Tokens.Count == 4)
+                                        return new ReturnValue(_logicComparisonMap[token.Operation](l1, r1) ? ExecuteExpression(token.Tokens[2], ref environment) : ExecuteExpression(token.Tokens[3], ref environment), typeof(bool));
+                                    else
+                                        return new ReturnValue(_logicComparisonMap[token.Operation](l1, r1), typeof(bool)); 
+                                }
                                 catch (Exception) { throw new RuntimeException("Incompatible types compared", token); }
                             }
                             else if (left1.Value is IComparable)
@@ -1021,6 +1060,8 @@ namespace SpecialityWebService.Generation
                         case Operator.ArithmeticPower:
                             ReturnValue left8 = ExecuteExpression(token.Tokens[0], ref environment);
                             ReturnValue right8 = ExecuteExpression(token.Tokens[1], ref environment);
+                            if (left8.Type == typeof(string) || right8.Type == typeof(string))
+                                return new ReturnValue(0, typeof(long));
                             if ((left8.Type == typeof(double) || left8.Type == typeof(long) || left8.Type == typeof(bool)) 
                                && (right8.Type == typeof(double) || right8.Type == typeof(long) || right8.Type == typeof(bool)))
                             {

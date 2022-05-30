@@ -64,6 +64,8 @@ namespace SpecialityWebService
             //app.UseCors(MyAllowSpecificOrigins);
 
             string generatedresourcepath = @"Resources\Generated";
+            if (!Directory.Exists(generatedresourcepath))
+                Directory.CreateDirectory(generatedresourcepath);
             foreach (string subdir in Directory.GetDirectories(generatedresourcepath))
                 Directory.Delete(subdir, true);
 

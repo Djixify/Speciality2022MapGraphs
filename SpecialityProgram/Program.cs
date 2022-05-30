@@ -6,6 +6,7 @@ using static SpecialityWebService.Map;
 using static SpecialityWebService.MathObjects;
 using static SpecialityWebService.Generation.Parser;
 using RBush;
+using static SpecialityWebService.Generation.Lexer;
 
 namespace SpecialityProgram
 {
@@ -13,9 +14,9 @@ namespace SpecialityProgram
     {
         public static void Main(string[] args)
         {
-            //TestLexer();
+            TestLexer();
 
-            TestNetwork();
+            //TestNetwork();
 
             //TestRangeTree();
             //while (true)
@@ -52,7 +53,9 @@ namespace SpecialityProgram
                 new KeyValuePair<string, ColumnData>("TYPE", new ColumnData("road", "path"))
             });
 
-            foreach(Tuple<string, double> testcase in testcases.GetRange(9,1))
+
+
+            foreach(Tuple<string, double> testcase in testcases.GetRange(9,0))
             {
                 try 
                 { 
@@ -66,6 +69,23 @@ namespace SpecialityProgram
                 {
                     System.Diagnostics.Debug.WriteLine($"Error in testcase: {testcase.Item1}: Tokenized as: {Lexer.GetTokenExpression(testcase.Item1).ToString()}, Error: {ex.ToString()}\n{ex.StackTrace}");
                 }
+            }
+
+            try
+            {
+                //Token test = Lexer.GetTokenExpression("(distance * 1000) / ((HAST_GAELD != \"NULL\") * HAST_GAELD + (HAST_GAELD == \"NULL\") * 50) * 60");
+                Token test = Lexer.GetTokenExpression("HAST_GAELD != \"NULL\" ? HAST_GAELD : 50");
+                Dictionary<string, ColumnData> env = new Dictionary<string, ColumnData>(new KeyValuePair<string, ColumnData>[]
+                {
+                    KeyValuePair.Create("HAST_GAELD", new ColumnData("NULL"))
+                });
+                ReturnValue val = Parser.ExecuteExpression("HAST_GAELD != \"NULL\" ? HAST_GAELD : 50", ref env);
+                //Token test = Lexer.GetTokenExpression("((H == J) * 2)");
+            }
+            catch (ParseException pex)
+            {
+                System.Diagnostics.Debug.WriteLine(pex.ToString());
+                System.Diagnostics.Debug.WriteLine(pex.StackTrace);
             }
 
             //Parser.ExecuteExpression()

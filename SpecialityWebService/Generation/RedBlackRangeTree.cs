@@ -18,7 +18,7 @@ namespace SpecialityWebService.Generation
             {
                 if (!_invalidBBox)
                 {
-                    var tmp = ReportChildren(_root);
+                    var tmp = ReportChildren(_root, Region.Infinite());
                     _boundarybox = Rectangle.FromLTRB(_root.Region.Left, tmp.Select(item => item.Key.Y).Max(), _root.Region.Right, tmp.Select(item => item.Key.Y).Min());
                 }
                 _invalidBBox = false;
@@ -192,62 +192,23 @@ namespace SpecialityWebService.Generation
 
         public List<T> Query(Rectangle query)
         {
-            List<KeyValuePair<Point, T>> horizontal = Query(_root, query.HorizontalRegion);
-            if (horizontal.Count == 0)
-                return new List<T>();
-            int left = FindLeftMost(horizontal, query.Bottom);
-            int right = left;
-            while (right < horizontal.Count)
-            {
-                if (horizontal[right].Key.Y < query.Top)
-                    right++;
-                else
-                    break;
-            }
-            right--;
-
-            return horizontal.GetRange(left, right - left + 1).Select(item => item.Value).ToList();
+            return Query(_root, query).Select(item => item.Value).ToList();
         }
 
 
         public List<T> Query(Point p, double tolerance)
         {
             var query = new Rectangle(p.X, p.Y, tolerance);
-            List<KeyValuePair<Point, T>> horizontal = Query(_root, query.HorizontalRegion);
-            if (horizontal.Count == 0)
-                return new List<T>();
-            int left = FindLeftMost(horizontal, query.Bottom);
-            int right = left;
-            while (right < horizontal.Count)
-            {
-                if (horizontal[right].Key.Y < query.Top)
-                    right++;
-                else
-                    break;
-            }
-            right--;
-            return horizontal.GetRange(left, right - left + 1).Where(item => item.Key.Distance(p) <= tolerance).Select(item => item.Value).ToList();
+            return Query(_root, query).Select(item => item.Value).ToList();
         }
 
         public Tuple<double, T> QueryClosest(Point p, double tolerance)
         {
             var query = new Rectangle(p.X, p.Y, tolerance);
-            List<KeyValuePair<Point, T>> horizontal = Query(_root, query.HorizontalRegion);
-            if (horizontal.Count == 0)
-                return Tuple.Create(double.PositiveInfinity, default(T));
-            int left = FindLeftMost(horizontal, query.Bottom);
-            int right = left;
-            while (right < horizontal.Count)
-            {
-                if (horizontal[right].Key.Y < query.Top)
-                    right++;
-                else
-                    break;
-            }
-            right--;
+            List<KeyValuePair<Point, T>> result = Query(_root, query);
 
             Tuple<double, T> miny = new Tuple<double, T>(double.PositiveInfinity, default(T));
-            foreach (var relevantY in horizontal.GetRange(left, right - left + 1))
+            foreach (var relevantY in result)
             {
                 double dist;
                 if ((dist = relevantY.Key.Distance(p)) < miny.Item1)
@@ -257,38 +218,40 @@ namespace SpecialityWebService.Generation
             return miny;
         }
 
-        public List<KeyValuePair<Point, T>> Query(RedBlackRangeNode<KeyValuePair<Point, T>> node, Region query)
+        public List<KeyValuePair<Point, T>> Query(RedBlackRangeNode<KeyValuePair<Point, T>> node, Rectangle query)
         {
             if (node == null)
                 return new List<KeyValuePair<Point, T>>();
-            if (node.Region.SubsetOf(query)) //All children inside, report all
-                return ReportChildren(node);
-            else if (!node.Region.Intersects(query)) //Not in query area, terminate
+            Region horizontal = query.HorizontalRegion;
+            if (node.Region.SubsetOf(horizontal)) //All children inside, report all
+                return ReportChildren(node, query.VerticalRegion);
+            else if (!node.Region.Intersects(horizontal)) //Not in query area, terminate
                 return new List<KeyValuePair<Point, T>>();
             else //Otherwise get left/right subtrees
             {
                 List<KeyValuePair<Point, T>> result = new List<KeyValuePair<Point, T>>();
-                if (node.Left != null && node.Left.Region.Intersects(query))
+                if (node.Left != null && node.Left.Region.Intersects(horizontal))
                     result.AddRange(Query(node.Left, query));
-                if (query.Contains(node.Key))
+                if (query.Contains(node.Value.Key))
                     result = MergeY(result, new List<KeyValuePair<Point, T>>() { node.Value });
-                if (node.Right != null && node.Right.Region.Intersects(query))
+                if (node.Right != null && node.Right.Region.Intersects(horizontal))
                     result = MergeY(result, Query(node.Right, query));
                 return result;
             }
         }
 
 
-        private List<KeyValuePair<Point, T>> ReportChildren(RedBlackRangeNode<KeyValuePair<Point, T>> node)
+        private List<KeyValuePair<Point, T>> ReportChildren(RedBlackRangeNode<KeyValuePair<Point, T>> node, Region vertical)
         {
             if (node == null)
                 return new List<KeyValuePair<Point, T>>();
             List<KeyValuePair<Point, T>> result = new List<KeyValuePair<Point, T>>();
             if (node.Left != null)
-                result.AddRange(ReportChildren(node.Left));
-            result = MergeY(result, new List<KeyValuePair<Point, T>>() { node.Value });
+                result.AddRange(ReportChildren(node.Left, vertical));
+            if (vertical.Contains(node.Value.Key.Y))
+                result = MergeY(result, new List<KeyValuePair<Point, T>>() { node.Value });
             if (node.Right != null)
-                result = MergeY(result, ReportChildren(node.Right));
+                result = MergeY(result, ReportChildren(node.Right, vertical));
             return result;
         }
 

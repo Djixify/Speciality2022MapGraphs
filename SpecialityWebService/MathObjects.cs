@@ -205,6 +205,13 @@ namespace SpecialityWebService
             }
             public double Width { get; private set; }
             public double Mid { get; private set; }
+            private Region (double left, double right, double width, double mid) 
+            {
+                _left = left;
+                _right = right;
+                Width = width;
+                Mid = mid;
+            }
             public Region(double left, double right)
             {
                 _left = left;
@@ -212,6 +219,8 @@ namespace SpecialityWebService
                 Width = right - left;
                 Mid = left + Width / 2.0;
             }
+
+            public static Region Infinite() => new Region(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity, 0);
 
             public bool Intersects(Region other) => Intersects(other.Left, other.Right);
             public bool Intersects(double left, double right) => !(this.Right < left || this.Left > right); //this.Right >= left && this.Left <= right

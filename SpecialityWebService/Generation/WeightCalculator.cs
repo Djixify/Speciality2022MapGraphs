@@ -264,6 +264,8 @@ namespace SpecialityWebService.Generation
                     {
                         case Operator.LogicEqual:
                             sb.Append(Tokens[0]).Append(" == ").Append(Tokens[1]);
+                            if (Tokens.Count == 4)
+                                sb.Append("?").Append(Tokens[2]).Append(":").Append(Tokens[3]);
                             break;
                         case Operator.LogicNotEqual:
                             sb.Append(Tokens[0]).Append(" != ").Append(Tokens[1]);
@@ -884,7 +886,7 @@ namespace SpecialityWebService.Generation
         public struct ColumnData
         {
             public string Value;
-            public ColumnData(string value, string defaultvalue = "0")
+            public ColumnData(string value, string defaultvalue = "NULL")
             {
                 Value = string.IsNullOrEmpty(value) ? defaultvalue : value;
             }
@@ -1009,7 +1011,7 @@ namespace SpecialityWebService.Generation
                             {
                                 try { 
                                     if (token.Tokens.Count == 4)
-                                        return new ReturnValue(_logicComparisonMap[token.Operation](l1, r1) ? ExecuteExpression(token.Tokens[2], ref environment) : ExecuteExpression(token.Tokens[3], ref environment), typeof(bool));
+                                        return _logicComparisonMap[token.Operation](l1, r1) ? ExecuteExpression(token.Tokens[2], ref environment) : ExecuteExpression(token.Tokens[3], ref environment);
                                     else
                                         return new ReturnValue(_logicComparisonMap[token.Operation](l1, r1), typeof(bool)); 
                                 }

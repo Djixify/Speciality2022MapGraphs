@@ -317,7 +317,7 @@ namespace SpecialityWebService
                         location.X -= circlewidth / 2;
                         location.Y -= circlewidth / 2;
 
-                        if (scale > 2500)
+                        if (scale > 2500 && !(v.Index == network.SelectedStartVertex || v.Index == network.SelectedEndVertex))
                             continue;
 
                         foreach (KeyValuePair<string, List<int>> path in network.EdgesBetween ?? new Dictionary<string, List<int>>())

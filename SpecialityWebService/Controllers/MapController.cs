@@ -282,6 +282,8 @@ namespace SpecialityWebService.Controllers
             }
             catch(RuntimeException rex)
             {
+                System.Diagnostics.Debug.WriteLine(rex.ToString());
+                System.Diagnostics.Debug.WriteLine(rex.StackTrace);
                 return Content(rex.ToString());
             }
             catch(KeyNotFoundException ex)

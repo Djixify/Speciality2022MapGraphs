@@ -234,15 +234,16 @@ function changedPreset(){
                 $('#directionbackward').val(splits[6])
                 if (splits.length >= 9) {
                     $('#weightlabel1').val(splits[7])
-                    $('#weightformula1').val(decodeURIComponent(splits[8]).replaceAll("]","+"))
+                    $('#weightformula1').val(decodeURIComponent(splits[8]).replaceAll("+", " ").replaceAll("]","+"))
                 }
                 if (splits.length >= 11) {
                     $('#weightlabel2').val(splits[9])
-                    $('#weightformula2').val(decodeURIComponent(splits[10]).replaceAll("]","+"))
+                    console.log(decodeURIComponent(splits[10]))
+                    $('#weightformula2').val(decodeURIComponent(splits[10]).replaceAll("+", " ").replaceAll("]","+"))
                 }
                 if (splits.length == 13) {
                     $('#weightlabel3').val(splits[11])
-                    $('#weightformula3').val(decodeURIComponent(splits[12]).replaceAll("]","+"))
+                    $('#weightformula3').val(decodeURIComponent(splits[12]).replaceAll("+", " ").replaceAll("]","+"))
                 }
                 updateNetworkstats()
             })

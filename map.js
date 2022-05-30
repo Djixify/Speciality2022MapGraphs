@@ -41,7 +41,7 @@ $(document).ready(async function(){
     
     updateMap();
 
-    var timer = setTimeout(notclick, 180);
+    var timer = setTimeout(notclick, 400);
     var isclick = false;
 
     function notclick() {
@@ -61,7 +61,7 @@ $(document).ready(async function(){
        dragging = true;
        isclick = true;
        clearTimeout(timer);
-       timer = setTimeout(notclick, 100);
+       timer = setTimeout(notclick, 400);
     });
  
     $('#map').mousemove(function(e){
@@ -74,7 +74,9 @@ $(document).ready(async function(){
   
     $('#map').mouseup(function(e) {
         console.log("Stopped dragging");
-        if (isclick) {
+        diffX = startX - e.clientX
+        diffY = startY - e.clientY
+        if (isclick && (diffX*diffX + diffY*diffY) < 16) {
             selectvertex(e.pageX - $('#map').offset().left, e.pageY - $('#map').offset().top)
         }
         else {

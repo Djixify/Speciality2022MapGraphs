@@ -334,9 +334,17 @@ namespace SpecialityWebService.Controllers
                 {
                     sb.AppendLine("Name: " + network.Name);
                     sb.AppendLine("Dataset: " + network.DatasetName);
+                    sb.AppendLine("#Paths = " + network.PathCount);
+                    sb.AppendLine("#Points = " + network.PointCount);
                     sb.AppendLine("Generation time: " + network.GenerationTime + "ms");
                     sb.AppendLine("|V| = " + network.V.Count);
                     sb.AppendLine("|E| = " + network.E.Count);
+                    if (network.Generator == Generator.Proposed)
+                    {
+                        sb.AppendLine("Path query area = " + Math.Round(network.QueriedAreaFullPaths / 1000000, 3).ToString(CultureInfo.InvariantCulture) + "km2");
+                        sb.AppendLine("Segment queries area = " + Math.Round(network.QueriedAreaSegments / 1000000, 3).ToString(CultureInfo.InvariantCulture) + "km2");
+                    }
+                    sb.AppendLine();
                     sb.AppendLine("Start vertex: " + network.SelectedStartVertex);
                     sb.AppendLine("End vertex:   " + network.SelectedEndVertex);
                     sb.AppendLine("Djikstra on weights:");

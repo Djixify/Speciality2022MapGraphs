@@ -292,12 +292,6 @@ namespace SpecialityWebService
                                 var _networkhighlightpen = new System.Drawing.Pen(_pathhighlightcolors[i % 3]);
                                 _networkhighlightpen.Width = _edgepen.Width + (8 - i * 4);
                                 g.DrawLines(_networkhighlightpen, e.RenderPoints.Select(p => Camera.ToScreenF(p)).ToArray());
-
-                                int circlewidth = vertexsize + network.V[e.V2].Edges.Count * vertexsizestep;
-                                var location = Camera.ToScreenF(e.RenderPoints.Last());
-                                location.X -= circlewidth / 2;
-                                location.Y -= circlewidth / 2;
-                                g.FillEllipse(new System.Drawing.SolidBrush(_pathhighlightcolors[i % 3]), new System.Drawing.RectangleF(location, new System.Drawing.SizeF(circlewidth, circlewidth)));
                                 g.Flush();
                             }
                             i++;
@@ -320,12 +314,7 @@ namespace SpecialityWebService
                         if (scale > 2500 && !(v.Index == network.SelectedStartVertex || v.Index == network.SelectedEndVertex))
                             continue;
 
-                        foreach (KeyValuePair<string, List<int>> path in network.EdgesBetween ?? new Dictionary<string, List<int>>())
-                        {
-                            if (v.Edges.Any(eid => path.Value.Contains(eid)))
-                                continue;
-                        }
-                        var color = v.Index == network.SelectedStartVertex || v.Index == network.SelectedEndVertex ? _networkhighlightcolor : _vertexstrokecolor;
+                        var color = _vertexstrokecolor;
 
                         g.FillEllipse(new System.Drawing.SolidBrush(color), new System.Drawing.RectangleF(location, new System.Drawing.SizeF(circlewidth, circlewidth)));
                         if (rendercount > renderthreshold)
@@ -337,6 +326,63 @@ namespace SpecialityWebService
                             rendercount++;
                         numberofvertices++;
                     }
+
+                    if (network.EdgesBetween != null)
+                    {
+                        int i = 0;
+                        foreach (KeyValuePair<string, List<int>> path in network.EdgesBetween)
+                        {
+                            foreach (int eid in path.Value)
+                            {
+                                Edge e = network.E[eid];
+                                var _networkhighlightpen = new System.Drawing.Pen(_pathhighlightcolors[i % 3]);
+                                int circlewidth = vertexsize + network.V[e.V1].Edges.Count * vertexsizestep + (3 - i * 4);
+                                var location = Camera.ToScreenF(e.RenderPoints.First());
+                                location.X -= circlewidth / 2;
+                                location.Y -= circlewidth / 2;
+                                g.FillEllipse(new System.Drawing.SolidBrush(_pathhighlightcolors[i % 3]), new System.Drawing.RectangleF(location, new System.Drawing.SizeF(circlewidth, circlewidth)));
+                                if (rendercount > renderthreshold)
+                                {
+                                    rendercount = 0;
+                                    g.Flush();
+                                }
+                                else
+                                    rendercount++;
+                                g.Flush();
+                            }
+                            i++;
+                        }
+                    }
+
+                    if (network.SelectedStartVertex > -1)
+                    {
+                        Vertex v = network.V[network.SelectedStartVertex];
+                        if (v != null)
+                        {
+                            int circlewidth = vertexsize + v.Edges.Count * vertexsizestep;
+                            var location = Camera.ToScreenF(v.Location);
+                            location.X -= circlewidth / 2;
+                            location.Y -= circlewidth / 2;
+                            var color = _networkhighlightcolor;
+                            g.FillEllipse(new System.Drawing.SolidBrush(color), new System.Drawing.RectangleF(location, new System.Drawing.SizeF(circlewidth, circlewidth)));
+                        }
+                    }
+
+                    if (network.SelectedEndVertex > -1)
+                    {
+                        Vertex v = network.V[network.SelectedEndVertex];
+                        if (v != null)
+                        {
+                            int circlewidth = vertexsize + v.Edges.Count * vertexsizestep;
+                            var location = Camera.ToScreenF(v.Location);
+                            location.X -= circlewidth / 2;
+                            location.Y -= circlewidth / 2;
+                            var color = _networkhighlightcolor;
+                            g.FillEllipse(new System.Drawing.SolidBrush(color), new System.Drawing.RectangleF(location, new System.Drawing.SizeF(circlewidth, circlewidth)));
+                        }
+                    }
+
+                    g.Flush();
 
                     numberofvertices = vertices.Count;
                 }

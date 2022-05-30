@@ -21,6 +21,8 @@ namespace SpecialityWebService.Generation
         public bool IsGenerating { get; }
         public bool Done { get; }
         public long TimeElapsed { get; }
+        public double QueriedAreaSegments { get; }
+        public double QueriedAreaPaths { get; }
         public Task<(List<Vertex>, List<Edge>)> Generate(IEnumerable<Path> paths, double tolerance, List<KeyValuePair<string, string>> weightcalculations, string directioncolumn = null, string forwardsdirection = null, string backwardsdirection = null);
         public Task<(List<Vertex>, List<Edge>)> Generate(IEnumerable<Path> paths, double endpointtolerance, double midpointtolerance, List<KeyValuePair<string, string>> weightcalculations, string directioncolumn = null, string forwardsdirection = null, string backwardsdirection = null);
         public void Cancel();

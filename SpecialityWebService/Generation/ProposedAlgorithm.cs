@@ -19,6 +19,8 @@ namespace SpecialityWebService.Generation
         public bool IsGenerating { get; private set; } = false;
         public bool Done { get; private set; } = false;
         public long TimeElapsed { get; private set; } = 0;
+        public double QueriedAreaSegments { get; private set; } = 0;
+        public double QueriedAreaPaths { get; private set; } = 0;
 
         private CancellationTokenSource cts = null;
         private CancellationToken ct;
@@ -41,6 +43,8 @@ namespace SpecialityWebService.Generation
                 IsGenerating = true;
                 TotalSteps = 2;
                 CurrentStep = 1;
+                QueriedAreaSegments = 0;
+                QueriedAreaPaths = 0;
                 TotalPaths = paths.Count();
                 StepInfo = "Adding vertices to Range-tree";
                 CurrentPath = 1;
@@ -92,6 +96,9 @@ namespace SpecialityWebService.Generation
                     ct.ThrowIfCancellationRequested();
                     Vertex pt1 = null, pt2 = null;
                     bool isFirstPoint1 = true;
+
+                    Rectangle pathbounds = Rectangle.FromPoints(path.Points);
+                    QueriedAreaPaths += pathbounds.Width * pathbounds.Height;
                     foreach (Point p in path.Points)
                     {
                         //int pt2index = pathlookups[pathcount][pointcount];
@@ -104,7 +111,9 @@ namespace SpecialityWebService.Generation
 
                             Rectangle pt1rect = new Rectangle(pt1.Location, pt1.IsEndpoint ? endpointtolerance : midpointtolerance);
                             Rectangle pt2rect = new Rectangle(pt2.Location, pt2.IsEndpoint ? endpointtolerance : midpointtolerance);
-                            foreach (int vertind in rangetree.Query(pt1rect.Union(pt2rect)).Where(index => index != pt1.Index && index != pt2.Index))
+                            Rectangle pt1pt2union = pt1rect.Union(pt2rect);
+                            QueriedAreaSegments += pt1pt2union.Width * pt1pt2union.Height;
+                            foreach (int vertind in rangetree.Query(pt1pt2union).Where(index => index != pt1.Index && index != pt2.Index))
                             {
                                 Vertex mid = V[vertind];
                                 if (mid.IsEndpoint) //Only perform segment binding when endpoint

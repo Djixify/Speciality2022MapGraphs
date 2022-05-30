@@ -45,8 +45,11 @@ namespace SpecialityWebService.Generation
         
         public Generator Generator { get; set; } = Generator.Proposed;
 
-        public long GenerationTime { get; set; } = -1; 
-
+        public long GenerationTime { get; set; } = -1;
+        public double PathCount { get; private set; }
+        public double PointCount { get; private set; }
+        public double QueriedAreaSegments { get; private set; }
+        public double QueriedAreaFullPaths { get; private set; }
         private IQueryStructure<int> _Equery { get; set; } = null;
         private IQueryStructure<int> _Vquery { get; set; } = null;
         private INetworkGenerator _generator { get; set; } = null;
@@ -133,6 +136,8 @@ namespace SpecialityWebService.Generation
 
         public Task Generate(IEnumerable<Path> paths)
         {
+            PathCount = paths.Count();
+            PointCount = paths.Aggregate(0, (acc, path) => acc + path.Points.Count);
             return _generator.Generate(paths, EndPointTolerance, MidPointTolerance, Weights, DirectionColumn, DirectionForwardsValue, DirectionBackwardsValue).ContinueWith(res =>
             {
                 (List<Vertex> V, List<Edge> E) = res.Result;
@@ -151,6 +156,8 @@ namespace SpecialityWebService.Generation
                     _Vquery.Insert(new IntEnvelop(v));
                 }
                 GenerationTime = _generator.TimeElapsed;
+                QueriedAreaFullPaths = _generator.QueriedAreaPaths;
+                QueriedAreaSegments = _generator.QueriedAreaSegments;
                 HasGenerated = true;
                 Save();
             });
@@ -320,6 +327,10 @@ namespace SpecialityWebService.Generation
             };
             HasGenerated = br.ReadBoolean();
             GenerationTime = br.ReadInt64();
+            QueriedAreaFullPaths = BitConverter.ToDouble(br.ReadBytes(8));
+            QueriedAreaSegments = BitConverter.ToDouble(br.ReadBytes(8));
+            PathCount = br.ReadInt32();
+            PointCount = br.ReadInt32();
             InstanciateQueryStructures();
         }
 
@@ -347,6 +358,10 @@ namespace SpecialityWebService.Generation
             bw.Write(BitConverter.GetBytes(gen));
             bw.Write(BitConverter.GetBytes(HasGenerated));
             bw.Write(BitConverter.GetBytes(GenerationTime));
+            bw.Write(BitConverter.GetBytes(QueriedAreaFullPaths));
+            bw.Write(BitConverter.GetBytes(QueriedAreaSegments));
+            bw.Write(BitConverter.GetBytes(PathCount));
+            bw.Write(BitConverter.GetBytes(PointCount));
         }
 
         public void Dispose()

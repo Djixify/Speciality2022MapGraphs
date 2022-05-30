@@ -24,6 +24,8 @@ namespace SpecialityWebService.Generation
         public bool IsGenerating { get; private set; } = false;
         public bool Done { get; private set; } = false;
         public long TimeElapsed { get; private set; } = 0;
+        public double QueriedAreaSegments { get; private set; } = 0;
+        public double QueriedAreaPaths { get; private set; } = 0;
 
         private CancellationTokenSource cts = null;
         private CancellationToken ct;

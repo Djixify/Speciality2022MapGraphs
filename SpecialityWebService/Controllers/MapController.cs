@@ -62,6 +62,9 @@ namespace SpecialityWebService.Controllers
                 case "small":
                     datasetsize = Map.DatasetSize.Small;
                     return success;
+                case "bridge":
+                    datasetsize = Map.DatasetSize.Bridge;
+                    return success;
                 case "medium":
                     datasetsize = Map.DatasetSize.Medium;
                     return success;

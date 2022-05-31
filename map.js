@@ -11,6 +11,8 @@ var sessiontoken = Math.random().toString(36).substr(2);
 var datasets = 
     ["vejmanhastigheder-small", 
      "geodanmark60-small",
+     "vejmanhastigheder-bridge", 
+     "geodanmark60-bridge",
      "vejmanhastigheder-medium", 
      "geodanmark60-medium",
      "vejmanhastigheder-large", 

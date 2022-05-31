@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema 
+    targetNamespace="http://ogr.maptools.org/"
+    xmlns:ogr="http://ogr.maptools.org/"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:gml="http://www.opengis.net/gml/3.2"
+    xmlns:gmlsf="http://www.opengis.net/gmlsf/2.0"
+    elementFormDefault="qualified"
+    version="1.0">
+<xs:annotation>
+  <xs:appinfo source="http://schemas.opengis.net/gmlsfProfile/2.0/gmlsfLevels.xsd">
+    <gmlsf:ComplianceLevel>0</gmlsf:ComplianceLevel>
+  </xs:appinfo>
+</xs:annotation>
+<xs:import namespace="http://www.opengis.net/gml/3.2" schemaLocation="http://schemas.opengis.net/gml/3.2.1/gml.xsd"/>
+<xs:import namespace="http://www.opengis.net/gmlsf/2.0" schemaLocation="http://schemas.opengis.net/gmlsfProfile/2.0/gmlsfLevels.xsd"/>
+<xs:element name="FeatureCollection" type="ogr:FeatureCollectionType" substitutionGroup="gml:AbstractFeature"/>
+<xs:complexType name="FeatureCollectionType">
+  <xs:complexContent>
+    <xs:extension base="gml:AbstractFeatureType">
+      <xs:sequence minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="featureMember">
+          <xs:complexType>
+            <xs:complexContent>
+              <xs:extension base="gml:AbstractFeatureMemberType">
+                <xs:sequence>
+                  <xs:element ref="gml:AbstractFeature"/>
+                </xs:sequence>
+              </xs:extension>
+            </xs:complexContent>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+<xs:element name="vmbridge" type="ogr:vmbridge_Type" substitutionGroup="gml:AbstractFeature"/>
+<xs:complexType name="vmbridge_Type">
+  <xs:complexContent>
+    <xs:extension base="gml:AbstractFeatureType">
+      <xs:sequence>
+        <xs:element name="geometryProperty" type="gml:MultiCurvePropertyType" nillable="true" minOccurs="0" maxOccurs="1"/> <!-- restricted to MultiLineString --><!-- srsName="urn:ogc:def:crs:EPSG::25832" -->
+        <xs:element name="BESTYRER" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="ADMVEJNR" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="ADMVEJDEL" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="FRAKMT" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="FRAKM" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="FRAM" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="TILKMT" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="TILKM" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="TILM" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="CPR_VEJNAV" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="HAST_VEJSI" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="KODE_HAST_" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="SIDEOFROAD" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="ID_HAST_VE" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="SIDEOFRO_1" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="OFFSET" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="HAST_GENER" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="KODE_HAS_1" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="HAST_LOKAL" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="HAST_GAELD" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="HAST_ANBEF" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:totalDigits value="24"/>
+              <xs:fractionDigits value="15"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="HAST_VAR_H" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="KODE_HAS_2" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="HAST_BYKOD" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="KODE_HAS_3" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="VEJSTIKLAS" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="KODE_VEJST" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="VEJTYPESKI" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="KODE_VEJTY" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="HAST_BEMAE" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="HAST_SENES" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="24"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="HAST_BRUGE" nillable="true" minOccurs="0" maxOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+</xs:schema>

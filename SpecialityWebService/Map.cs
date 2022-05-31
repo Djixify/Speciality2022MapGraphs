@@ -24,6 +24,7 @@ namespace SpecialityWebService
         public enum DatasetSize
         {
             Small,
+            Bridge,
             Medium,
             Large
         }
@@ -36,12 +37,14 @@ namespace SpecialityWebService
                 KeyValuePair.Create(Dataset.GeoDanmark60, new Dictionary<DatasetSize, string>(new KeyValuePair<DatasetSize, string>[]
                 {
                     KeyValuePair.Create(DatasetSize.Small, @"Resources\Vectordata\dfvejedatatinystige.gml"),
+                    KeyValuePair.Create(DatasetSize.Bridge, @"Resources\Vectordata\dfbridge.gml"),
                     KeyValuePair.Create(DatasetSize.Medium, @"Resources\Vectordata\dfvejedata.gml"),
                     KeyValuePair.Create(DatasetSize.Large, @"Resources\Vectordata\dfvejedatalarge.gml")
                 })),
                 KeyValuePair.Create(Dataset.VejmanHastigheder, new Dictionary<DatasetSize, string>(new KeyValuePair<DatasetSize, string>[]
                 {
                     KeyValuePair.Create(DatasetSize.Small, @"Resources\Vectordata\vmvejedatatinystige.gml"),
+                    KeyValuePair.Create(DatasetSize.Bridge, @"Resources\Vectordata\vmbridge.gml"),
                     KeyValuePair.Create(DatasetSize.Medium, @"Resources\Vectordata\vmvejedata.gml"),
                     KeyValuePair.Create(DatasetSize.Large, @"Resources\Vectordata\vmvejedatalarge.gml")
                 }))

@@ -166,10 +166,12 @@
           <select id="datasetselector" style="grid-column: 2; grid-row: 1;" onchange="changedataset()">
             <option value="0">Vejhastigheder small</option>
             <option value="1">Geodanmark60 small</option>
-            <option value="2">Vejhastigheder medium</option>
-            <option value="3">Geodanmark60 medium</option>
-            <option value="4">Vejhastigheder large</option>
-            <option value="5">Geodanmark60 large</option>
+            <option value="2">Vejhastigheder bridge</option>
+            <option value="3">Geodanmark60 bridge</option>
+            <option value="4">Vejhastigheder medium</option>
+            <option value="5">Geodanmark60 medium</option>
+            <option value="6">Vejhastigheder large</option>
+            <option value="7">Geodanmark60 large</option>
           </select>
           <div style="grid-column: 1; grid-row: 2;">Existing networks:</div>
           <select id="presetsselect" onchange="changedPreset()" style="grid-column: 2; grid-row: 2; align-self: center;">
@@ -219,8 +221,8 @@
               <li style="overflow-wrap: break-word;"><b>In-line if:</b> condition ? true branch : false branch </li>
               <li style="overflow-wrap: break-word;"><b>Functions:</b> sqrt, pow, floor, ceil, cos, sin, tan, acos, asin, atan</li>
               <li style="overflow-wrap: break-word;"><b>Example 1(shortest distance):</b> distance</li>
-              <li style="overflow-wrap: break-word;"><b>Example 2(ETA, but only roads):</b> (type == "road") * distance / speed_limit + (type != "road") * infinite</li>
-              <li style="overflow-wrap: break-word;"><b>Example 3(ETA, slow vehicle):</b> distance / ((speed_limit &#62; 80) * 80 + (speed_limit &#60;= 80) * speed_limit)</li>
+              <li style="overflow-wrap: break-word;"><b>Example 2(ETA, but only roads):</b> type == "road" ? distance / 1000 / speed_limit : infinite</li>
+              <li style="overflow-wrap: break-word;"><b>Example 3(ETA, slow vehicle):</b> distance / 1000 / (speed_limit &#62; 80 ? 80 : speed_limit)</li>
             </ul>
           </div>
           <div style="grid-column: 1; grid-row: 11; max-width: 600px;"><div style="display: inline-block; margin-right: 10px;">Messages: </div><div id="networksettingtext" style="display: inline-block; color: red;"></div></div>

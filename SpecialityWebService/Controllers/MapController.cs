@@ -350,7 +350,7 @@ namespace SpecialityWebService.Controllers
                     sb.AppendLine();
                     sb.AppendLine("Start vertex: " + network.SelectedStartVertex);
                     sb.AppendLine("End vertex:   " + network.SelectedEndVertex);
-                    sb.AppendLine("Djikstra on weights:");
+                    sb.AppendLine("Dijkstra on weights:");
                     int j = 0;
                     string[] color = new string[] { "Cyan", "Magenta", "Yellow" };
                     foreach (KeyValuePair<string, List<int>> path in network.EdgesBetween ?? new Dictionary<string, List<int>>())

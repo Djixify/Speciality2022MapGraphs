@@ -26,6 +26,7 @@ namespace SpecialityWebService.Generation
         public long TimeElapsed { get; private set; } = 0;
         public double QueriedAreaSegments { get; private set; } = 0;
         public double QueriedAreaPaths { get; private set; } = 0;
+        public IQueryStructure<int> GenerationQueryStructure { get; set; } = new Rtree<int>();
 
         private CancellationTokenSource cts = null;
         private CancellationToken ct;
@@ -51,7 +52,7 @@ namespace SpecialityWebService.Generation
                     StepInfo = "Adding vertices to R-tree";
                     CurrentPath = 1;
 
-                    Rtree<int> rtree = new Rtree<int>();
+                    GenerationQueryStructure.Clear();
                     List<Vertex> V = new List<Vertex>();
                     int vertexid = 0;
                     int edgeid = 0;
@@ -62,10 +63,10 @@ namespace SpecialityWebService.Generation
                         {
                             pt2 = new Vertex(vertexid, p, new List<int>(), path.Id, path.Fid);
                             pt2.IsEndpoint = p == path.Points.First() || p == path.Points.Last();
-                            (double dist, int ext_p) = rtree.QueryClosest(p, endpointtolerance);
+                            (double dist, int ext_p) = GenerationQueryStructure.QueryClosest(p, endpointtolerance);
                             if (double.IsPositiveInfinity(dist))
                             {
-                                rtree.Insert(new IntEnvelop(pt2));
+                                GenerationQueryStructure.Insert(new IntEnvelop(pt2));
                                 V.Add(pt2);
                                 vertexid++;
                             }
@@ -90,7 +91,7 @@ namespace SpecialityWebService.Generation
                         foreach (Point p in path.Points)
                         {
                             //Assume a vertex now exists at the location
-                            pt2 = V[rtree.QueryClosest(p, endpointtolerance).Item2];
+                            pt2 = V[GenerationQueryStructure.QueryClosest(p, endpointtolerance).Item2];
 
                             if (!isFirstPoint1)
                             {

@@ -14,11 +14,11 @@ namespace SpecialityProgram
     {
         public static void Main(string[] args)
         {
-            TestLexer();
+            //TestLexer();
 
             //TestNetwork();
 
-            //TestRangeTree();
+            TestRangeTree();
             //while (true)
                 //GetWMS().Wait();
         }
@@ -373,6 +373,18 @@ namespace SpecialityProgram
                 System.Diagnostics.Debug.Write(j + ", ");
             }
 
+            QuadTree<int> tree7 = new QuadTree<int>(new Rectangle(5,5,5), 10);
+            i = 1;
+            foreach (Point p in testpoints)
+            {
+                tree7.Insert(new IntEnvelop(i++, new Rectangle(p, 0.00001)));
+            }
+            System.Diagnostics.Debug.WriteLine("Found the following 2d points(Quadtree):");
+            foreach (int j in tree7.Query(testquery))
+            {
+                System.Diagnostics.Debug.Write(j + ", ");
+            }
+
             testpoints = new Point[]
             {
                 new Point(1.0,0.0),
@@ -382,29 +394,29 @@ namespace SpecialityProgram
                 new Point(0.0,3.0)
             };
 
-            RedBlackRangeTree2D<int> tree7 = new RedBlackRangeTree2D<int>();
+            RedBlackRangeTree2D<int> tree8 = new RedBlackRangeTree2D<int>();
             i = 1;
             foreach (Point p in testpoints)
             {
-                tree7.Insert(p.X, p.Y, i++);
+                tree8.Insert(p.X, p.Y, i++);
             }
             System.Diagnostics.Debug.WriteLine("Found the following 2d points(RedBlackTree):");
             foreach (Point p in testpoints)
             {
-                (double _, int j) = tree7.QueryClosest(p, 0.5);
+                (double _, int j) = tree8.QueryClosest(p, 0.5);
                 System.Diagnostics.Debug.Write(j + ", ");
             }
 
-            Rtree<int> tree8 = new Rtree<int>();
+            Rtree<int> tree9 = new Rtree<int>();
             i = 1;
             foreach (Point p in testpoints)
             {
-                tree8.Insert(new IntEnvelop(i++, new Rectangle(p, 0.00001)));
+                tree9.Insert(new IntEnvelop(i++, new Rectangle(p, 0.00001)));
             }
             System.Diagnostics.Debug.WriteLine("Found the following 2d points(RTree):");
             foreach (Point p in testpoints)
             {
-                (double _, int j) = tree8.QueryClosest(p, 0.5);
+                (double _, int j) = tree9.QueryClosest(p, 0.5);
                 System.Diagnostics.Debug.Write(j + ", ");
             }
         }

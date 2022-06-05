@@ -22,6 +22,8 @@ namespace SpecialityWebService.Generation
         public double QueriedAreaSegments { get; private set; } = 0;
         public double QueriedAreaPaths { get; private set; } = 0;
 
+        public IQueryStructure<int> GenerationQueryStructure { get; set; } = new RedBlackRangeTree2D<int>();
+
         private CancellationTokenSource cts = null;
         private CancellationToken ct;
 

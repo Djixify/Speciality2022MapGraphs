@@ -12,6 +12,8 @@ namespace SpecialityWebService.Generation
     {
         private QuadTreeNode<T> _root;
 
+        private int _count = 0;
+        public int Count => _count;
         public double MinimumWidth { get; private set; } = 0.0;
         public int MaxDepth { get; private set; } = int.MaxValue;
         public Rectangle BoundaryBox { get { return _root.BoundaryBox; } set { } }
@@ -19,7 +21,7 @@ namespace SpecialityWebService.Generation
         public QuadTree(Rectangle bounds, double minimumquadsize = 16.0)
         {
             MinimumWidth = minimumquadsize;
-            MaxDepth = (int)(Math.Max(bounds.Width, bounds.Height) / minimumquadsize);
+            MaxDepth = (int)Math.Ceiling(Math.Log2(Math.Max(bounds.Width, bounds.Height)) - Math.Log2(minimumquadsize));
 
             _root = new QuadTreeNode<T>(null, bounds, MaxDepth);
         }
@@ -44,7 +46,8 @@ namespace SpecialityWebService.Generation
 
         public Tuple<double, T> QueryClosest(Point p, double tolerance)
         {
-            return _root.Query(new Rectangle(p, tolerance)).Select(item => Tuple.Create(item.Key.ClosestDistanceToPoint(p), item.Value)).MinBy(item => item.Item1);
+            var result = _root.Query(new Rectangle(p, tolerance));
+            return result.Count > 0 ? result.Select(item => Tuple.Create(item.Key.ClosestDistanceToPoint(p), item.Value)).MinBy(item => item.Item1) : Tuple.Create(double.PositiveInfinity, default(T));
         }
 
         public List<T> QueryAll()
@@ -54,13 +57,15 @@ namespace SpecialityWebService.Generation
 
         public void Insert(IQueryItem<T> item)
         {
-            _root.Insert(item);
+            if (_root.Insert(item))
+                _count++;
         }
 
         public void InsertAll(IEnumerable<IQueryItem<T>> items)
         {
             foreach (IQueryItem<T> item in items)
-                _root.Insert(item);
+                if (_root.Insert(item))
+                    _count++;
         }
 
         public void Clear()

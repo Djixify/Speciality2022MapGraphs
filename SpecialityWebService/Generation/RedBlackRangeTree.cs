@@ -13,6 +13,9 @@ namespace SpecialityWebService.Generation
         private Rectangle _boundarybox = new Rectangle();
         private bool _invalidBBox = true;
 
+        private int _count = 0;
+        public int Count => _count;
+
         public Rectangle BoundaryBox { 
             get
             {
@@ -123,6 +126,7 @@ namespace SpecialityWebService.Generation
             }
 
             _root.IsBlack = true;
+            _count++;
         }
 
         public void LeftRotate(RedBlackRangeNode<KeyValuePair<Point, T>> x)

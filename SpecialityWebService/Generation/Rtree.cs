@@ -18,6 +18,8 @@ namespace SpecialityWebService.Generation
 
         public Rectangle BoundaryBox { get { return _rtree.Envelope; } set { } }
 
+        public int Count => _rtree.Count;
+
         public void Insert(IQueryItem<T> item)
         {
             _rtree.Insert(item);

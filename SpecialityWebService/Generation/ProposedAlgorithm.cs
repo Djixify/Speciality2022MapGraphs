@@ -55,7 +55,6 @@ namespace SpecialityWebService.Generation
                 int vertexid = 0;
                 int edgeid = 0;
 
-                RedBlackRangeTree2D<int> rangetree = new RedBlackRangeTree2D<int>();
                 int[] pathlookups = new int[paths.Aggregate(0, (acc, path) => acc + path.Points.Count)];
 
                 int path2vert = 0;
@@ -68,11 +67,11 @@ namespace SpecialityWebService.Generation
                         Vertex v = new Vertex(vertexid, p, new List<int>(), path.Id, path.Fid);
                         v.IsEndpoint = pointcount == 0 || pointcount == path.Points.Count - 1;
                         double toldistance = (v.IsEndpoint ? endpointtolerance : midpointtolerance);
-
-                        (double dist, int ext_p) = rangetree.QueryClosest(p, toldistance);
+                        (double dist, int ext_p) = GenerationQueryStructure.QueryClosest(p, toldistance);
                         if (double.IsPositiveInfinity(dist))
                         {
-                            rangetree.Insert(new IntEnvelop(v));
+
+                            GenerationQueryStructure.Insert(new IntEnvelop(v));
                             V.Add(v);
                             pathlookups[path2vert] = vertexid;
                             vertexid++;
@@ -115,7 +114,7 @@ namespace SpecialityWebService.Generation
                             Rectangle pt2rect = new Rectangle(pt2.Location, pt2.IsEndpoint ? endpointtolerance : midpointtolerance);
                             Rectangle pt1pt2union = pt1rect.Union(pt2rect);
                             QueriedAreaSegments += pt1pt2union.Width * pt1pt2union.Height;
-                            foreach (int vertind in rangetree.Query(pt1pt2union).Where(index => index != pt1.Index && index != pt2.Index))
+                            foreach (int vertind in GenerationQueryStructure.Query(pt1pt2union).Where(index => index != pt1.Index && index != pt2.Index))
                             {
                                 Vertex mid = V[vertind];
                                 if (mid.IsEndpoint) //Only perform segment binding when endpoint

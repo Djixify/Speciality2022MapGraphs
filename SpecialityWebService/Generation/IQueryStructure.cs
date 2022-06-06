@@ -10,6 +10,7 @@ namespace SpecialityWebService.Generation
 {
     public interface IQueryStructure<T> : IBound
     {
+        public int Count { get; }
         public List<T> Query(Rectangle rect);
         public List<T> Query(Point p, double tolerance);
         public Tuple<double, T> QueryClosest(Point p, double tolerance);

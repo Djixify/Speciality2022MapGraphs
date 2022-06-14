@@ -11,8 +11,10 @@ namespace SpecialityUnittests
         public int GeoDanmarkNPoints = 0, VejhastighederNPoints = 0;
         public QueryFixture()
         {
-            GeoDanmark60 = new GeoDanmark60_GML(@"C:\Users\chaos\Desktop\Speciality2022MapGraphs\SpecialityWebService\Resources\Vectordata\dfvejedata.gml");
-            Vejhastigheder = new Vejmanhastigheder_GML(@"C:\Users\chaos\Desktop\Speciality2022MapGraphs\SpecialityWebService\Resources\Vectordata\vmvejedatalarge.gml");
+            string test = Directory.GetCurrentDirectory();
+            System.Diagnostics.Debug.WriteLine(test);
+            GeoDanmark60 = new GeoDanmark60_GML(@"..\..\..\..\SpecialityWebService\Resources\Vectordata\dfvejedata.gml");
+            Vejhastigheder = new Vejmanhastigheder_GML(@"..\..\..\..\SpecialityWebService\Resources\Vectordata\vmvejedatalarge.gml");
             GeoDanmarkNPoints = GeoDanmark60.GetPathEnumerator(Rectangle.Infinite()).Aggregate(0, (acc, path) => acc + path.Points.Count);
             VejhastighederNPoints = Vejhastigheder.GetPathEnumerator(Rectangle.Infinite()).Aggregate(0, (acc, path) => acc + path.Points.Count);
         }
@@ -87,7 +89,7 @@ namespace SpecialityUnittests
             INetworkGenerator qgis = new ProposedAlgorithm()
             {
                 GenerationQueryStructure = new QuadTree<int>(fixture.GeoDanmark60.GetBoundaryBox(), 2.0)
-};
+            };
             qgis.Generate(fixture.GeoDanmark60.GetPathEnumerator(Rectangle.Infinite()), 0.5, new List<KeyValuePair<string, string>>() { KeyValuePair.Create("distance", "distance") }).Wait();
         }
 
